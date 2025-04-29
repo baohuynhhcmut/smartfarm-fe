@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import bg from "../assets/Profile image.png"
+import bg from "../../assets/Profile image.png"
 import { ProfileForm } from "@/form/user-profile-form";
 import { PasswordForm } from "@/form/change-password-from";
 import { useEffect, useState } from "react";

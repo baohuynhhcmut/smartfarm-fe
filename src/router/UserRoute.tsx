@@ -1,17 +1,13 @@
-import { createBrowserRouter } from "react-router-dom";
-import Home from "../pages/Home/Home";
-import Devices from "../pages/Devices";
-import HomePage2 from "../pages/HomePage/HomePage2";
-import Messages from "../pages/Messages/Messages";
-import History from "../pages/History";
+import Home from "../pages/User/Home/Home";
+import Devices from "../pages/User/Devices";
+import HomePage2 from "../pages/User/HomePage/HomePage2";
+import Messages from "../pages/User/Messages/Messages";
+import History from "../pages/User/History";
 import LayoutUser from "../layout/user";
-import Profile from "../pages/Profile";
+import Profile from "../pages/User/Profile";
 
-
-
-export const router = createBrowserRouter([
-  {
-    path: "/user",
+const userRouter = {
+    path: "",
     element: <LayoutUser />,
     children: [
       {
@@ -23,8 +19,8 @@ export const router = createBrowserRouter([
         element: <Devices />,
       },
       {
-        path: "/profile",
-        element: <Profile />
+        path: "profile",
+        element: <Profile />,
       },
       {
         path: "home2",
@@ -35,10 +31,11 @@ export const router = createBrowserRouter([
         element: <Messages />,
       },
       {
-        path: 'history',
-        element: <History/>
-      }
+        path: "history",
+        element: <History />,
+      },
     ],
-  },
-]);
-   
+}
+ 
+
+export default userRouter;
