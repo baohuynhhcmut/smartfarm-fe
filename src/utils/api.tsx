@@ -1,5 +1,5 @@
 
-const BASE_URL:string = 'http://localhost:8080/api/v1/'
+const BASE_URL:string = 'http://localhost:8081/api/v1/'
 
 const headers = {
     'Content-Type': 'application/json',
@@ -15,11 +15,12 @@ export const get = async (url:string) => {
 }
 
 export const getWithToken = async (url:string,token:string) => {
+    console.log(`${BASE_URL}${url}`)
     const response = await fetch(`${BASE_URL}${url}`, {
         method: 'GET',
         headers: {
             ...headers,
-        Authorizationn: `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         },
     })
     return response.json()    

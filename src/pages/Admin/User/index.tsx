@@ -5,4 +5,5 @@ const UserAdmin = () => {
     <div>UserAdmin</div>
   )
 }
+
 export default UserAdmin
