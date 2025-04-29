@@ -12,11 +12,11 @@ const adminRouter = {
         element: <DashboardAdmin />,
     },
     {
-        path: "user",
+        path: "users",
         element: <UserAdmin />,
     },
     {
-        path: "device",
+        path: "devices",
         element: <DeviceAdmin />,
     },
   ],

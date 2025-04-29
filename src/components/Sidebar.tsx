@@ -6,67 +6,61 @@ import {
   FaChartLine,
   FaEnvelope,
   FaUser,
-} from "react-icons/fa"; // Import các icon
+} from "react-icons/fa";
 import "./Sidebar.css";
 
 const Sidebar = () => {
   const location = useLocation();
 
+  // Helper function to check if path is active
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(`/user${path}`);
+  };
+
   return (
     <div className="sidebar">
       <Link
-        to="/"
-        className={`sidebar-item ${location.pathname === "/" ? "active" : ""}`}
+        to="/user"
+        className={`sidebar-item ${location.pathname === "/user" ? "active" : ""}`}
       >
-        <FaHome /> {/* Icon Home */}
+        <FaHome />
         <span>Home</span>
       </Link>
       <Link
-        to="/devices"
-        className={`sidebar-item ${
-          location.pathname === "/devices" ? "active" : ""
-        }`}
+        to="/user/devices"
+        className={`sidebar-item ${isActive("/devices") ? "active" : ""}`}
       >
-        <FaDev /> {/* Icon Devices */}
+        <FaDev />
         <span>Devices</span>
       </Link>
       <Link
-        to="/history"
-        className={`sidebar-item ${
-          location.pathname === "/history" ? "active" : ""
-        }`}
+        to="/user/history"
+        className={`sidebar-item ${isActive("/history") ? "active" : ""}`}
       >
-        <FaHistory /> {/* Icon History */}
+        <FaHistory />
         <span>History</span>
       </Link>
       <Link
-        to="/analytics"
-        className={`sidebar-item ${
-          location.pathname === "/analytics" ? "active" : ""
-        }`}
+        to="/user/analytics"
+        className={`sidebar-item ${isActive("/home2") ? "active" : ""}`}
       >
-        <FaChartLine /> {/* Icon Analytics */}
+        <FaChartLine />
         <span>Analytics</span>
       </Link>
       <Link
-        to="/messages"
-        className={`sidebar-item ${
-          location.pathname === "/messages" ? "active" : ""
-        }`}
+        to="/user/messages"
+        className={`sidebar-item ${isActive("/messages") ? "active" : ""}`}
       >
-        <FaEnvelope /> {/* Icon Messages */}
+        <FaEnvelope />
         <span>Messages</span>
       </Link>
       <Link
-        to="/profile"
-        className={`sidebar-item ${
-          location.pathname === "/profile" ? "active" : ""
-        }`}
+        to="/user/profile"
+        className={`sidebar-item ${isActive("/profile") ? "active" : ""}`}
       >
-        <FaUser /> {/* Icon Profile */}
+        <FaUser />
         <span>My Profile</span>
       </Link>
-      {/* ... rest of the code remains the same */}
     </div>
   );
 };

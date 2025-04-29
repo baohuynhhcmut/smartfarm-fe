@@ -80,143 +80,159 @@ const History = () => {
       {/* CSS được viết trực tiếp trong thẻ <style> */}
       <style>
         {`
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-                    .container {
-                        width: 100%;
-                        max-width: 800px;
-                        margin: 0 auto;
-                        padding: 20px;
-                        font-family: 'Inter', sans-serif;
-                    }
+          .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+          }
 
-                    .filters {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 10px; /* Khoảng cách giữa các phần tử */
-                        align-items: center; /* Căn giữa các phần tử theo chiều dọc */
-                        margin-bottom: 20px;
-                    }
+          .filters-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+          }
 
-                    .dropdown {
-                        position: relative;
-                        flex: 1;
-                        
-                    }
+          .garden-dropdown {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+          }
 
-                    .dropdown-select {
-                        width: 100%;
-                        padding: 10px 14px;
-                        font-size: 16px;
-                        filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
-                        border-radius: 9px;
-                        background-color: white;
-                        appearance: none;
-                        cursor: pointer;
-                        font-family: 'Inter', sans-serif;
-                        gap: 5px;
-                        margin-bottom: 13px;
-                    }
+          .filters-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+          }
 
-                    .dropdown-select:hover {
-                        border-color: #999;
-                    }
+          .filter-item {
+            flex: 1;
+            min-width: 0;
+          }
 
-                    .dropdown-icon {
-                        position: absolute;
-                        top: 50%;
-                        right: 10px;
-                        transform: translateY(-50%);
-                        pointer-events: none;
-                        color: #666;
-                    }
+          .dropdown-select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 16px;
+            filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
+            border-radius: 9px;
+            background-color: white;
+            appearance: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+          }
 
-                    .date-filter {
-                        display: flex;
-                       
-                        align-items: center;
-                        filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
-                        border-radius: 9px;
-                    }
+          .dropdown-select:hover {
+            border-color: #999;
+          }
 
-                    .date-filter input {
-                        padding: 10px 14px;
-                        font-size: 16px;
-                        border-radius: 9px;
-                        background-color: white;
-                        font-family: 'Inter', sans-serif;
-                    }
+          .dropdown-icon {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+          }
 
-                    .title {
-                        font-size: 24px;
-                        font-weight: bold;
-                        margin-bottom: 20px;
-                        font-family: 'Inter', sans-serif;
-                    }
+          .date-filter-container {
+            display: flex;
+            gap: 10px;
+            flex: 2;
+          }
 
-                    .table-container {
-                        background-color: white;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                        overflow: hidden;
-                        font-family: 'Inter', sans-serif;
-                    }
+          .date-filter {
+            flex: 1;
+            min-width: 0;
+          }
 
-                    .table {
-                        width: 100%;
-                        border-collapse: collapse;
-                    }
+          .date-filter input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 16px;
+            border-radius: 9px;
+            background-color: white;
+            font-family: 'Inter', sans-serif;
+          }
 
-                    .table-header {
-                        background-color: #f5f5f5;
-                    }
+          .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+          }
 
-                    .table-header th {
-                        padding: 12px 16px;
-                        text-align: left;
-                        font-weight: bold;
-                        color: #333;
-                    }
+          .table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+          }
 
-                    .table-row {
-                        border-top: 1px solid #eee;
-                    }
+          .table {
+            width: 100%;
+            border-collapse: collapse;
+          }
 
-                    .table-row td {
-                        padding: 12px 16px;
-                    }
+          .table-header {
+            background-color: #f5f5f5;
+          }
 
-                    .device-brand {
-                        font-size: 14px;
-                        color: #666;
-                    }
+          .table-header th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+          }
 
-                    .by-label {
-                        padding: 4px 8px;
-                        border-radius: 12px;
-                        font-size: 14px;
-                    }
+          .table-row {
+            border-top: 1px solid #eee;
+          }
 
-                    .by-you {
-                        color: #ec4899;
-                        background-color: #fce7f3;
-                    }
+          .table-row td {
+            padding: 12px 16px;
+          }
 
-                    .by-admin {
-                        color: #3b82f6;
-                        background-color: #dbeafe;
-                    }
+          .device-brand {
+            font-size: 14px;
+            color: #666;
+          }
 
-                    .by-automatic {
-                        color: #f97316;
-                        background-color: #ffedd5;
-                    }
-                `}
+          .by-label {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+          }
+
+          .by-you {
+            color: #ec4899;
+            background-color: #fce7f3;
+          }
+
+          .by-admin {
+            color: #3b82f6;
+            background-color: #dbeafe;
+          }
+
+          .by-automatic {
+            color: #f97316;
+            background-color: #ffedd5;
+          }
+
+          @media (max-width: 768px) {
+            
+          }
+        `}
       </style>
 
       {/* Phần JSX */}
-      <div className="dropdown-container">
-        <div className="dropdown">
+      <div className="filters-container">
+        <div className="garden-dropdown">
           <select className="dropdown-select">
             <option>Choose the garden</option>
             <option>Trường Đại học Bách Khoa, ĐHQGHCM</option>
@@ -230,58 +246,62 @@ const History = () => {
             </svg>
           </div>
         </div>
-      </div>
 
-      {/* Bộ lọc */}
-      <div className="filters">
-        <div className="dropdown">
-          <select
-            className="dropdown-select"
-            value={filterId}
-            onChange={(e) => setFilterId(e.target.value)}
-          >
-            <option value="">Filter by ID</option>
-            {[...new Set(data.map((item) => item.id))].map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
+        {/* Bộ lọc - now in one row */}
+        <div className="filters-row">
+          <div className="filter-item">
+            <select
+              className="dropdown-select"
+              value={filterId}
+              onChange={(e) => setFilterId(e.target.value)}
+            >
+              <option value="">Filter by ID</option>
+              {[...new Set(data.map((item) => item.id))].map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <select
+              className="dropdown-select"
+              value={filterDevice}
+              onChange={(e) => setFilterDevice(e.target.value)}
+            >
+              <option value="">Choose the device</option>
+              <option value="Led">Led</option>
+              <option value="Irrigation">Irrigation</option>
+              <option value="Spinker">Spinker</option>
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <select
+              className="dropdown-select"
+              value={filterBy}
+              onChange={(e) => setFilterBy(e.target.value)}
+            >
+              <option value="">Filter by</option>
+              <option value="You">You</option>
+              <option value="Admin">Admin</option>
+              <option value="Automatic">Automatic</option>
+            </select>
+          </div>
+
+          {/* Date filter container */}
+          <div className="date-filter-container">
+            <DateFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              className="date-filter"
+            />
+          </div>
+          
         </div>
-
-        <div className="dropdown">
-          <select
-            className="dropdown-select"
-            value={filterDevice}
-            onChange={(e) => setFilterDevice(e.target.value)}
-          >
-            <option value="">Choose the device</option>
-            <option value="Led">Led</option>
-            <option value="Irrigation">Irrigation</option>
-            <option value="Spinker">Spinker</option>
-          </select>
-        </div>
-
-        <div className="dropdown">
-          <select
-            className="dropdown-select"
-            value={filterBy}
-            onChange={(e) => setFilterBy(e.target.value)}
-          >
-            <option value="">Filter by</option>
-            <option value="You">You</option>
-            <option value="Admin">Admin</option>
-            <option value="Automatic">Automatic</option>
-          </select>
-        </div>
-
-        {/* Sử dụng component DateFilter */}
-        <DateFilter
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-        />
       </div>
 
       <h1 className="title">DEVICE ACTIVITY HISTORY</h1>
