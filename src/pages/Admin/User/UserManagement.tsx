@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -29,7 +29,8 @@ import {
 import { toast } from "sonner";
 import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { userApi, User } from "@/api/userApi";
+import { User } from "@/api/userApi";
+import { sampleUsers } from "./sampleData";
 
 const UserPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -60,168 +61,6 @@ const UserPage = () => {
     gardenCount: 0,
   });
 
-  const initialUsers = useMemo<User[]>(
-    () => [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        role: "admin" as const,
-        status: "active" as const,
-        createdAt: "2024-01-01",
-        lastLogin: "2024-02-25",
-        address: "123 Main St, City A",
-        phone: "+1234567890",
-        deviceCount: 5,
-        gardenCount: 3,
-      },
-      {
-        id: "2",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-05",
-        lastLogin: "2024-02-24",
-        address: "456 Oak St, City B",
-        phone: "+1234567891",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "3",
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-10",
-        lastLogin: "2024-02-15",
-        address: "789 Pine St, City C",
-        phone: "+1234567892",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "4",
-        name: "Alice Brown",
-        email: "alice@example.com",
-        role: "user" as const,
-        status: "pending" as const,
-        createdAt: "2024-01-15",
-        lastLogin: "2024-02-10",
-        address: "321 Elm St, City D",
-        phone: "+1234567893",
-        deviceCount: 1,
-        gardenCount: 1,
-      },
-      {
-        id: "5",
-        name: "Charlie Wilson",
-        email: "charlie@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-20",
-        lastLogin: "2024-02-05",
-        address: "654 Maple St, City E",
-        phone: "+1234567894",
-        deviceCount: 3,
-        gardenCount: 2,
-      },
-      {
-        id: "6",
-        name: "Diana Miller",
-        email: "diana@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-25",
-        lastLogin: "2024-01-30",
-        address: "987 Cedar St, City F",
-        phone: "+1234567895",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "7",
-        name: "Edward Davis",
-        email: "edward@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-30",
-        lastLogin: "2024-02-01",
-        address: "147 Birch St, City G",
-        phone: "+1234567896",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "8",
-        name: "Fiona Clark",
-        email: "fiona@example.com",
-        role: "user" as const,
-        status: "pending" as const,
-        createdAt: "2024-02-01",
-        lastLogin: "2024-02-15",
-        address: "258 Spruce St, City H",
-        phone: "+1234567897",
-        deviceCount: 1,
-        gardenCount: 0,
-      },
-      {
-        id: "9",
-        name: "George White",
-        email: "george@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-02-05",
-        lastLogin: "2024-02-20",
-        address: "369 Aspen St, City I",
-        phone: "+1234567898",
-        deviceCount: 4,
-        gardenCount: 2,
-      },
-      {
-        id: "10",
-        name: "Hannah Lee",
-        email: "hannah@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-02-10",
-        lastLogin: "2024-02-18",
-        address: "741 Willow St, City J",
-        phone: "+1234567899",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "11",
-        name: "Ian Taylor",
-        email: "ian@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-02-15",
-        lastLogin: "2024-02-22",
-        address: "852 Redwood St, City K",
-        phone: "+1234567900",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "12",
-        name: "Anna Wilson",
-        email: "anna@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-12",
-        lastLogin: "2024-02-20",
-        address: "963 Poplar St, City L",
-        phone: "+1234567901",
-        deviceCount: 3,
-        gardenCount: 2,
-      },
-    ],
-    []
-  );
-
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -230,11 +69,14 @@ const UserPage = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await userApi.getAllUsers();
-      setUsers(data);
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setUsers(sampleUsers);
     } catch (err) {
-      setError("Failed to fetch users");
-      toast.error("Failed to fetch users");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch users";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -265,9 +107,13 @@ const UserPage = () => {
     }
 
     try {
-      const createdUser = await userApi.createUser(
-        newUser as Omit<User, "id" | "createdAt">
-      );
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const createdUser: User = {
+        ...(newUser as Omit<User, "id" | "createdAt">),
+        id: (users.length + 1).toString(),
+        createdAt: new Date().toISOString().split("T")[0],
+      };
       setUsers([...users, createdUser]);
       setIsAddDialogOpen(false);
       setNewUser({
@@ -283,7 +129,9 @@ const UserPage = () => {
       setFormErrors({});
       toast.success("User added successfully");
     } catch (err) {
-      toast.error("Failed to add user");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add user";
+      toast.error(errorMessage);
     }
   };
 
@@ -297,19 +145,19 @@ const UserPage = () => {
     }
 
     try {
-      const updatedUser = await userApi.updateUser(
-        selectedUser.id,
-        selectedUser
-      );
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setUsers(
-        users.map((user) => (user.id === selectedUser.id ? updatedUser : user))
+        users.map((user) => (user.id === selectedUser.id ? selectedUser : user))
       );
       setIsEditDialogOpen(false);
       setSelectedUser(null);
       setFormErrors({});
       toast.success("User updated successfully");
     } catch (err) {
-      toast.error("Failed to update user");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update user";
+      toast.error(errorMessage);
     }
   };
 
@@ -317,13 +165,16 @@ const UserPage = () => {
     if (!selectedUser) return;
 
     try {
-      await userApi.deleteUser(selectedUser.id);
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setUsers(users.filter((user) => user.id !== selectedUser.id));
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
       toast.success("User deleted successfully");
     } catch (err) {
-      toast.error("Failed to delete user");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete user";
+      toast.error(errorMessage);
     }
   };
 
