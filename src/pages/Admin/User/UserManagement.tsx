@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaUserPlus, FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // API URL của backend
@@ -54,6 +54,26 @@ interface User {
     latitude: number;
     longitude: number;
   }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Device {
+  _id: string;
+  device_id: string;
+  device_name: string;
+  feed: string;
+  type: string;
+  category: string;
+  user: string;
+  time_on: string | null;
+  time_off: string | null;
+  is_active: boolean;
+  location: {
+    garden_name: string;
+    latitude: number;
+    longitude: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -86,6 +106,8 @@ const UserPage = () => {
       country: "",
     },
   });
+  const [isViewDevicesDialogOpen, setIsViewDevicesDialogOpen] = useState(false);
+  const [userDevices, setUserDevices] = useState<Device[]>([]);
 
   const handleTokenError = () => {
     // Xóa token khi hết hạn hoặc không hợp lệ
@@ -116,7 +138,7 @@ const UserPage = () => {
       setIsLoading(true);
       setError(null);
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjE3NDgyNywiZXhwIjoxNzQ2MjYxMjI3fQ.x16pY0x70_bDwm0mONZYM3EKljbbK0emQPgsP5uMwhY";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
 
       const response = await axios.get(`${API_URL}/user`, {
         headers: {
@@ -173,7 +195,7 @@ const UserPage = () => {
 
     try {
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjE3NDgyNywiZXhwIjoxNzQ2MjYxMjI3fQ.x16pY0x70_bDwm0mONZYM3EKljbbK0emQPgsP5uMwhY";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
 
       const userData = {
         email: newUser.email,
@@ -253,7 +275,7 @@ const UserPage = () => {
 
     try {
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjE3NDgyNywiZXhwIjoxNzQ2MjYxMjI3fQ.x16pY0x70_bDwm0mONZYM3EKljbbK0emQPgsP5uMwhY";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
 
       const userData = {
         email: selectedUser.email,
@@ -335,7 +357,7 @@ const UserPage = () => {
 
     try {
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjE3NDgyNywiZXhwIjoxNzQ2MjYxMjI3fQ.x16pY0x70_bDwm0mONZYM3EKljbbK0emQPgsP5uMwhY";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
 
       console.log("Deleting user with email:", selectedUser.email);
 
@@ -445,6 +467,45 @@ const UserPage = () => {
   console.log("Current Items:", currentItems);
   console.log("Current Page:", currentPage);
   console.log("Total Pages:", Math.ceil(filteredUsers.length / itemsPerPage));
+
+  const handleViewDevices = async (user: User) => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const response = await axios.get(`${API_URL}/device/getDeviceByUser`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          email: user.email,
+        },
+      });
+
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
+        setUserDevices(response.data.data);
+        setSelectedUser(user);
+        setIsViewDevicesDialogOpen(true);
+      } else {
+        // Hiển thị thông báo khi không có devices
+        toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
+          duration: 3000,
+          position: "top-center",
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching user devices:", err);
+      // Luôn hiển thị thông báo khi có lỗi
+      toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
+        duration: 3000,
+        position: "top-center",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -741,6 +802,13 @@ const UserPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => handleViewDevices(user)}
+                      >
+                        <FaEye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setSelectedUser(user);
                           setIsEditDialogOpen(true);
@@ -927,6 +995,123 @@ const UserPage = () => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteUser}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Devices Dialog */}
+      <Dialog
+        open={isViewDevicesDialogOpen}
+        onOpenChange={setIsViewDevicesDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>
+              Devices and Sensors of {selectedUser?.name}
+            </DialogTitle>
+            <DialogDescription>
+              View all devices and sensors associated with this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {userDevices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="text-muted-foreground text-center">
+                  <p className="text-lg font-medium">No devices found</p>
+                  <p className="text-sm mt-2">
+                    This user doesn't have any devices or sensors yet.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Devices Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Devices</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Device Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Garden</TableHead>
+                        <TableHead>Feed</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userDevices
+                        .filter((device) => device.category === "device")
+                        .map((device) => (
+                          <TableRow key={device._id}>
+                            <TableCell>{device.device_name}</TableCell>
+                            <TableCell>{device.type}</TableCell>
+                            <TableCell>{device.location.garden_name}</TableCell>
+                            <TableCell>{device.feed}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  device.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {device.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Sensors Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Sensors</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sensor Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Garden</TableHead>
+                        <TableHead>Feed</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userDevices
+                        .filter((device) => device.category === "sensor")
+                        .map((device) => (
+                          <TableRow key={device._id}>
+                            <TableCell>{device.device_name}</TableCell>
+                            <TableCell>{device.type}</TableCell>
+                            <TableCell>{device.location.garden_name}</TableCell>
+                            <TableCell>{device.feed}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  device.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {device.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDevicesDialogOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
