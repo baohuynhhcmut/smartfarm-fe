@@ -30,10 +30,21 @@
     border-radius: 12px;
 }
 
-.sidebar-item:hover {
+.sidebar-item:hover:not(.logout-button) {
     background-color: #F3569B; 
     color: white; 
     font-weight: bold;
     border-radius: 12px;
 }
 
+/* Logout button styles */
+.logout-button {
+  margin-top: auto; /* Pushes the button to the bottom */
+  margin-bottom: 20px; /* Adds some space at the bottom */
+}
+
+.logout-button:hover {
+  color: #e74c3c; /* Different color for logout to stand out */
+  background-color: transparent !important; /* Không có background */
+  font-weight: bold;
+}
