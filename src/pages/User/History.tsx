@@ -1,6 +1,7 @@
 import { useState } from "react";
 import DateFilter from "../../components/DateFilter"; // Import component DateFilter
 
+
 const History = () => {
   const data = [
     {
@@ -141,8 +142,12 @@ const History = () => {
 
           .date-filter-container {
             display: flex;
+            filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
             gap: 10px;
             flex: 2;
+            max-width: 300px;
+            align-items: center;
+            justify-content: center;
           }
 
           .date-filter {
@@ -151,6 +156,14 @@ const History = () => {
           }
 
           .date-filter input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 16px;
+            border-radius: 9px;
+            background-color: white;
+            font-family: 'Inter', sans-serif;
+          }
+          .date-filter-container input {
             width: 100%;
             padding: 10px 14px;
             font-size: 16px;
@@ -169,7 +182,7 @@ const History = () => {
           .table-container {
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             overflow: hidden;
             font-family: 'Inter', sans-serif;
           }
@@ -225,7 +238,9 @@ const History = () => {
           }
 
           @media (max-width: 768px) {
-            
+            .filters-row {
+              flex-direction: column;
+            }
           }
         `}
       </style>
@@ -290,18 +305,20 @@ const History = () => {
             </select>
           </div>
 
-          {/* Date filter container */}
           <div className="date-filter-container">
-            <DateFilter
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-              className="date-filter"
-            />
-          </div>
-          
+          <DateFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            // Bỏ dòng className="date-filter" ở đây
+          />
         </div>
+        </div>
+
+        {/* Date filter container - now part of the same row */}
+        
+        
       </div>
 
       <h1 className="title">DEVICE ACTIVITY HISTORY</h1>

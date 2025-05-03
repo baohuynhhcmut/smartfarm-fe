@@ -19,8 +19,6 @@ interface Device {
   category: string;
   is_active: boolean;
   garden_name: string;
-  longitude: number;
-  latitude: number;
   time_on: string | null;
   time_off: string | null;
 }
@@ -265,16 +263,12 @@ const DeviceAdmin = () => {
     type: 'soil moisture sensor',
     user: 'user3',
     garden_name: 'Garden1_User3',
-    longitude: 106.671883,
-    latitude: 10.783112,
   });
 
   const [filters, setFilters] = useState({
     id: '',
     category: '',
     username: '',
-    longitude: '',
-    latitude: '',
     gardenName: '',
     type: '',
     isActive: ''
@@ -301,8 +295,6 @@ const DeviceAdmin = () => {
         category: device.category,
         is_active: device.is_active,
         garden_name: device.location?.garden_name || 'N/A',
-        longitude: device.location?.longitude || 0,
-        latitude: device.location?.latitude || 0,
         time_on: device.time_on,
         time_off: device.time_off
       }));
@@ -339,9 +331,6 @@ const DeviceAdmin = () => {
       } else if (filters.isActive) {
         url = `${BASE_URL}/device/getDeviceByIsActive?is_active=${filters.isActive}`;
         filterApplied = true;
-      } else if (filters.longitude && filters.latitude) {
-        url = `${BASE_URL}/device/getDeviceByLocation?longitude=${filters.longitude}&latitude=${filters.latitude}`;
-        filterApplied = true;
       }
 
       const response = await fetch(url);
@@ -367,8 +356,6 @@ const DeviceAdmin = () => {
         category: device.category,
         is_active: device.is_active,
         garden_name: device.location?.garden_name || 'N/A',
-        longitude: device.location?.longitude || 0,
-        latitude: device.location?.latitude || 0,
         time_on: device.time_on,
         time_off: device.time_off
       }));
@@ -456,8 +443,6 @@ const DeviceAdmin = () => {
         user: newDevice.user,
         location: {
           garden_name: newDevice.garden_name,
-          latitude: newDevice.latitude,
-          longitude: newDevice.longitude
         }
       };
   
@@ -487,8 +472,6 @@ const DeviceAdmin = () => {
         category: data.category ?? '',
         is_active: data.is_active ?? true,
         garden_name: data.location?.garden_name,
-        longitude: data.location?.longitude,
-        latitude: data.location?.latitude,
         time_on: null,
         time_off: null
       };
@@ -501,8 +484,6 @@ const DeviceAdmin = () => {
         type: 'soil moisture sensor',
         user: 'user3',
         garden_name: 'Garden1_User3',
-        longitude: 106.671883,
-        latitude: 10.783112,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add device');
@@ -524,8 +505,6 @@ const DeviceAdmin = () => {
           is_active: currentDevice.isOn,
           location: {
             garden_name: currentDevice.garden_name,
-            longitude: currentDevice.longitude,
-            latitude: currentDevice.latitude
           },
           time_on: currentDevice.time_on,
           time_off: currentDevice.time_off
@@ -564,8 +543,6 @@ const DeviceAdmin = () => {
       id: '',
       category: '',
       username: '',
-      longitude: '',
-      latitude: '',
       gardenName: '',
       type: '',
       isActive: ''
@@ -674,26 +651,6 @@ const DeviceAdmin = () => {
               />
             </FormGroup>
             <FormGroup>
-              <Label>Longitude</Label>
-              <Input 
-                type="number" 
-                value={filters.longitude}
-                onChange={(e) => setFilters({...filters, longitude: e.target.value})}
-                placeholder="Filter by longitude"
-                step="0.000001"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Latitude</Label>
-              <Input 
-                type="number" 
-                value={filters.latitude}
-                onChange={(e) => setFilters({...filters, latitude: e.target.value})}
-                placeholder="Filter by latitude"
-                step="0.000001"
-              />
-            </FormGroup>
-            <FormGroup>
               <Label>Status</Label>
               <Select
                 value={filters.isActive}
@@ -713,7 +670,7 @@ const DeviceAdmin = () => {
               onClick={clearFilters}
               style={{ backgroundColor: '#e53e3e' }}
             >
-              <FaTimes /> Clear Filters
+               Clear Filters
             </SubmitButton>
           </div>
         </div>
@@ -726,8 +683,6 @@ const DeviceAdmin = () => {
               <TableHeader>Device ID</TableHeader>
               <TableHeader>Device Name</TableHeader>
               <TableHeader>Garden Name</TableHeader>
-              <TableHeader>Longitude</TableHeader>
-              <TableHeader>Latitude</TableHeader>
               <TableHeader>Type</TableHeader>
               <TableHeader>Category</TableHeader>
               <TableHeader>Time On</TableHeader>
@@ -744,8 +699,6 @@ const DeviceAdmin = () => {
                 <TableCell>{device.device_id}</TableCell>
                 <TableCell>{device.name}</TableCell>
                 <TableCell>{device.garden_name}</TableCell>
-                <TableCell>{device.longitude}</TableCell>
-                <TableCell>{device.latitude}</TableCell>
                 <TableCell>{device.type}</TableCell>
                 <TableCell>{device.category}</TableCell>
                 <TableCell>{formatDateTime(device.time_on)}</TableCell>
@@ -834,26 +787,6 @@ const DeviceAdmin = () => {
                 placeholder="Enter garden name"
               />
             </FormGroup>
-            <FormGroup>
-              <Label>Longitude</Label>
-              <Input 
-                type="number" 
-                value={newDevice.longitude}
-                onChange={(e) => setNewDevice({...newDevice, longitude: parseFloat(e.target.value)})}
-                placeholder="Enter longitude"
-                step="0.000001"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Latitude</Label>
-              <Input 
-                type="number" 
-                value={newDevice.latitude}
-                onChange={(e) => setNewDevice({...newDevice, latitude: parseFloat(e.target.value)})}
-                placeholder="Enter latitude"
-                step="0.000001"
-              />
-            </FormGroup>
             <SubmitButton onClick={handleAddDevice}>
               Add Device
             </SubmitButton>
@@ -894,26 +827,6 @@ const DeviceAdmin = () => {
                 value={currentDevice.garden_name}
                 onChange={(e) => setCurrentDevice({...currentDevice, garden_name: e.target.value})}
                 placeholder="Enter garden name"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Longitude</Label>
-              <Input 
-                type="number" 
-                value={currentDevice.longitude}
-                onChange={(e) => setCurrentDevice({...currentDevice, longitude: parseFloat(e.target.value)})}
-                placeholder="Enter longitude"
-                step="0.000001"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Latitude</Label>
-              <Input 
-                type="number" 
-                value={currentDevice.latitude}
-                onChange={(e) => setCurrentDevice({...currentDevice, latitude: parseFloat(e.target.value)})}
-                placeholder="Enter latitude"
-                step="0.000001"
               />
             </FormGroup>
             <FormGroup>
