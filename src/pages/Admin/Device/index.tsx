@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FaTrash, FaPlus, FaEdit, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaTrash, FaPlus, FaEdit, FaFilter } from 'react-icons/fa';
 
 // Styled components
 interface ToggleButtonProps {
@@ -257,12 +257,13 @@ const DeviceAdmin = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentDevice, setCurrentDevice] = useState<Device | null>(null);
+  const [gardens, setGardens] = useState<any[]>([]);
   const [newDevice, setNewDevice] = useState({
-    device_id: 'dev012',
-    device_name: 'Soil moisture Sensor',
-    type: 'soil moisture sensor',
-    user: 'user3',
-    garden_name: 'Garden1_User3',
+    device_id: '',
+    device_name: '',
+    type: '',
+    user: '',
+    location: ''
   });
 
   const [filters, setFilters] = useState({
@@ -307,12 +308,24 @@ const DeviceAdmin = () => {
     }
   };
 
+  const fetchGardensByUser = async (email: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/user/getGarden?email=${email}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch gardens');
+      }
+      const data = await response.json();
+      setGardens(data.data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch gardens');
+    }
+  };
+
   const fetchFilteredDevices = async () => {
     try {
       let url = `${BASE_URL}/device/getAllDevice`;
       let filterApplied = false;
 
-      // Check which filters are active and construct the appropriate endpoint
       if (filters.id) {
         url = `${BASE_URL}/device/getDeviceById?device_id=${filters.id}`;
         filterApplied = true;
@@ -339,9 +352,9 @@ const DeviceAdmin = () => {
       }
       const data = await response.json();
       
-      let devicesData = data.data || data; // Handle different response structures
+      let devicesData = data.data || data;
       if (!Array.isArray(devicesData)) {
-        devicesData = [devicesData]; // Convert single device to array
+        devicesData = [devicesData];
       }
 
       const transformedDevices = devicesData.map((device: any) => ({
@@ -380,27 +393,33 @@ const DeviceAdmin = () => {
     try {
       const deviceToToggle = devices.find(device => device.id === id);
       if (!deviceToToggle) return;
-
-      const response = await fetch(`${BASE_URL}/device/updateStatus/${id}`, {
-        method: 'GET',
+  
+      const response = await fetch(`${BASE_URL}/device/updateDeviceByActive`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          device_id: deviceToToggle.device_id,
           is_active: !deviceToToggle.isOn
         })
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to update device status');
       }
-
+  
+      const data = await response.json();
+      
       setDevices(devices.map(device => 
         device.id === id 
           ? { 
               ...device, 
-              isOn: !device.isOn,
-              lastUsed: new Date().toISOString()
+              isOn: data.data.is_active,
+              lastUsed: new Date().toISOString(),
+              time_on: data.data.time_on,
+              time_off: data.data.time_off,
+              garden_name: data.data.location?.garden_name || device.garden_name
             } 
           : device
       ));
@@ -412,27 +431,42 @@ const DeviceAdmin = () => {
   const deleteDevice = async (id: string) => {
     try {
       const deviceToDelete = devices.find(device => device.id === id);
-      if (!deviceToDelete) return;
-
-      const response = await fetch(`${BASE_URL}/device/deleteDeviceByUser`, {
-        method: 'POST',
-        headers: {
+      if (!deviceToDelete) {
+        setError('Device not found in local state');
+        return false;
+      }
+  
+      const response = await fetch(`${BASE_URL}/device/deleteDeviceById`, {
+        method: 'DELETE',
+        headers: { 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user: deviceToDelete.username
+          device_id: deviceToDelete.device_id
         })
       });
-      
+  
       if (!response.ok) {
-        throw new Error('Failed to delete device');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete device');
       }
   
-      setDevices(devices.filter(device => device.id !== id));
+      const responseData = await response.json();
+      
+      if (responseData.status === 200 && responseData.message === "Device deleted successfully") {
+        // Update the UI by removing the deleted device from the state
+        setDevices(devices.filter(device => device.id !== id));
+        return true;
+      } else {
+        throw new Error(responseData.message || 'Delete operation failed');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete device');
+      console.error('Delete error:', err);
+      setError(err instanceof Error ? err.message : 'Delete failed');
+      return false;
     }
   };
+  
 
   const handleAddDevice = async () => {
     try {
@@ -441,11 +475,9 @@ const DeviceAdmin = () => {
         device_name: newDevice.device_name,
         type: newDevice.type,
         user: newDevice.user,
-        location: {
-          garden_name: newDevice.garden_name,
-        }
+        location: newDevice.location
       };
-  
+
       const response = await fetch(`${BASE_URL}/device/createDevice`, {
         method: 'POST',
         headers: {
@@ -453,37 +485,37 @@ const DeviceAdmin = () => {
         },
         body: JSON.stringify(payload)
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to add device');
       }
-  
+
       const data = await response.json();
-  
+
       const newDeviceEntry: Device = {
-        id: data._id,
-        device_id: data.device_id,
-        name: data.device_name,
-        isOn: data.is_active ?? true,
-        lastUsed: new Date().toISOString(),
-        registeredAt: data.createdAt ?? new Date().toISOString(),
-        username: data.user,
-        type: data.type,
-        category: data.category ?? '',
-        is_active: data.is_active ?? true,
-        garden_name: data.location?.garden_name,
-        time_on: null,
-        time_off: null
+        id: data.data._id,
+        device_id: data.data.device_id,
+        name: data.data.device_name,
+        isOn: data.data.is_active,
+        lastUsed: data.data.time_on || new Date().toISOString(),
+        registeredAt: data.data.createdAt,
+        username: data.data.user,
+        type: data.data.type,
+        category: data.data.category || '',
+        is_active: data.data.is_active,
+        garden_name: data.data.location?.garden_name || 'N/A',
+        time_on: data.data.time_on,
+        time_off: data.data.time_off
       };
-  
+
       setDevices([...devices, newDeviceEntry]);
       setIsModalOpen(false);
       setNewDevice({
-        device_id: 'dev012',
-        device_name: 'Soil moisture Sensor',
-        type: 'soil moisture sensor',
-        user: 'user3',
-        garden_name: 'Garden1_User3',
+        device_id: '',
+        device_name: '',
+        type: '',
+        user: '',
+        location: ''
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add device');
@@ -494,20 +526,15 @@ const DeviceAdmin = () => {
     if (!currentDevice) return;
     
     try {
-      const response = await fetch(`${BASE_URL}/device/update/${currentDevice.id}`, {
-        method: 'PUT',
+      const response = await fetch(`${BASE_URL}/device/updateDeviceByUser`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          device_name: currentDevice.name,
+          device_id: currentDevice.device_id,
           user: currentDevice.username,
-          is_active: currentDevice.isOn,
-          location: {
-            garden_name: currentDevice.garden_name,
-          },
-          time_on: currentDevice.time_on,
-          time_off: currentDevice.time_off
+          location: currentDevice.garden_name
         })
       });
 
@@ -515,9 +542,17 @@ const DeviceAdmin = () => {
         throw new Error('Failed to update device');
       }
 
+      const data = await response.json();
+      
       setDevices(devices.map(device => 
         device.id === currentDevice.id 
-          ? currentDevice 
+          ? { 
+              ...device,
+              device_id: data.data.device_id,
+              username: data.data.user,
+              garden_name: data.data.location?.garden_name || currentDevice.garden_name,
+              updatedAt: data.data.updatedAt
+            } 
           : device
       ));
       
@@ -531,6 +566,9 @@ const DeviceAdmin = () => {
   const openEditModal = (device: Device) => {
     setCurrentDevice(device);
     setIsEditModalOpen(true);
+    if (device.username) {
+      fetchGardensByUser(device.username);
+    }
   };
 
   const applyFilters = () => {
@@ -572,6 +610,43 @@ const DeviceAdmin = () => {
     return <Container>Error: {error}</Container>;
   }
 
+  const updateDeviceTimer = async (deviceId: string, timeOn: string | null, timeOff: string | null) => {
+    try {
+      const deviceToUpdate = devices.find(device => device.id === deviceId);
+      if (!deviceToUpdate) return;
+
+      const response = await fetch(`${BASE_URL}/device/updateDeviceByTimer?device_id=${deviceToUpdate.device_id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          device_id: deviceToUpdate.device_id,
+          time_on: timeOn,
+          time_off: timeOff
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update device timer');
+      }
+
+      const data = await response.json();
+      
+      setDevices(devices.map(device => 
+        device.id === deviceId 
+          ? { 
+              ...device, 
+              time_on: data.time_on,
+              time_off: data.time_off
+            } 
+          : device
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update device timer');
+    }
+  };
+
   return (
     <Container>
       <Header>
@@ -591,7 +666,6 @@ const DeviceAdmin = () => {
         </div>
       </Header>
 
-      {/* Filter Panel */}
       {isFilterOpen && (
         <div style={{ 
           padding: '1rem', 
@@ -670,7 +744,7 @@ const DeviceAdmin = () => {
               onClick={clearFilters}
               style={{ backgroundColor: '#e53e3e' }}
             >
-               Clear Filters
+              Clear Filters
             </SubmitButton>
           </div>
         </div>
@@ -717,10 +791,13 @@ const DeviceAdmin = () => {
                       <FaEdit />
                     </EditButton>
                     <DeleteButton
-                      onClick={() => {
+                      onClick={async () => {
                         const confirmed = window.confirm(`Are you sure to remove "${device.name}"?`);
                         if (confirmed) {
-                          deleteDevice(device.id);
+                          const success = await deleteDevice(device.id);
+                          if (!success) {
+                            alert('Failed to delete device');
+                          }
                         }
                       }}
                     >
@@ -749,6 +826,7 @@ const DeviceAdmin = () => {
                 value={newDevice.device_id}
                 onChange={(e) => setNewDevice({...newDevice, device_id: e.target.value})}
                 placeholder="Enter device ID (e.g., dev012)"
+                required
               />
             </FormGroup>
             <FormGroup>
@@ -758,6 +836,7 @@ const DeviceAdmin = () => {
                 value={newDevice.device_name}
                 onChange={(e) => setNewDevice({...newDevice, device_name: e.target.value})}
                 placeholder="Enter device name"
+                required
               />
             </FormGroup>
             <FormGroup>
@@ -767,6 +846,7 @@ const DeviceAdmin = () => {
                 value={newDevice.type}
                 onChange={(e) => setNewDevice({...newDevice, type: e.target.value})}
                 placeholder="Enter device type"
+                required
               />
             </FormGroup>
             <FormGroup>
@@ -776,15 +856,17 @@ const DeviceAdmin = () => {
                 value={newDevice.user}
                 onChange={(e) => setNewDevice({...newDevice, user: e.target.value})}
                 placeholder="Enter username"
+                required
               />
             </FormGroup>
             <FormGroup>
-              <Label>Garden Name</Label>
+              <Label>Garden Name (Location)</Label>
               <Input 
                 type="text" 
-                value={newDevice.garden_name}
-                onChange={(e) => setNewDevice({...newDevice, garden_name: e.target.value})}
+                value={newDevice.location}
+                onChange={(e) => setNewDevice({...newDevice, location: e.target.value})}
                 placeholder="Enter garden name"
+                required
               />
             </FormGroup>
             <SubmitButton onClick={handleAddDevice}>
@@ -803,12 +885,12 @@ const DeviceAdmin = () => {
               <CloseButton onClick={() => setIsEditModalOpen(false)}>&times;</CloseButton>
             </ModalHeader>
             <FormGroup>
-              <Label>Device Name</Label>
+              <Label>Device ID</Label>
               <Input 
                 type="text" 
-                value={currentDevice.name}
-                onChange={(e) => setCurrentDevice({...currentDevice, name: e.target.value})}
-                placeholder="Enter device name"
+                value={currentDevice.device_id}
+                onChange={(e) => setCurrentDevice({...currentDevice, device_id: e.target.value})}
+                placeholder="Enter device ID"
               />
             </FormGroup>
             <FormGroup>
@@ -816,55 +898,53 @@ const DeviceAdmin = () => {
               <Input 
                 type="text" 
                 value={currentDevice.username}
-                onChange={(e) => setCurrentDevice({...currentDevice, username: e.target.value})}
+                onChange={async (e) => {
+                  const newUsername = e.target.value;
+                  setCurrentDevice({...currentDevice, username: newUsername});
+                  if (newUsername) {
+                    await fetchGardensByUser(newUsername);
+                  } else {
+                    setGardens([]);
+                  }
+                }}
                 placeholder="Enter username"
               />
             </FormGroup>
+            {currentDevice.username && (
+              <FormGroup>
+                <Label>Garden Name</Label>
+                <Select
+                  value={currentDevice.garden_name}
+                  onChange={(e) => setCurrentDevice({...currentDevice, garden_name: e.target.value})}
+                >
+                  <option value="">Select a garden</option>
+                  {gardens.map(garden => (
+                    <option key={garden._id} value={garden.name}>
+                      {garden.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormGroup>
+            )}
             <FormGroup>
-              <Label>Garden Name</Label>
+              <Label>Device Name</Label>
               <Input 
                 type="text" 
-                value={currentDevice.garden_name}
-                onChange={(e) => setCurrentDevice({...currentDevice, garden_name: e.target.value})}
-                placeholder="Enter garden name"
+                value={currentDevice.name}
+                onChange={(e) => setCurrentDevice({...currentDevice, name: e.target.value})}
+                placeholder="Enter device name"
+                disabled
               />
             </FormGroup>
             <FormGroup>
-              <Label>Time On</Label>
+              <Label>Device Type</Label>
               <Input 
-                type="datetime-local" 
-                value={currentDevice.time_on || ''}
-                onChange={(e) => setCurrentDevice({...currentDevice, time_on: e.target.value})}
+                type="text" 
+                value={currentDevice.type}
+                onChange={(e) => setCurrentDevice({...currentDevice, type: e.target.value})}
+                placeholder="Enter device type"
+                disabled
               />
-            </FormGroup>
-            <FormGroup>
-              <Label>Time Off</Label>
-              <Input 
-                type="datetime-local" 
-                value={currentDevice.time_off || ''}
-                onChange={(e) => setCurrentDevice({...currentDevice, time_off: e.target.value})}
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Registration Date</Label>
-              <Input 
-                type="datetime-local" 
-                value={currentDevice.registeredAt}
-                onChange={(e) => setCurrentDevice({...currentDevice, registeredAt: e.target.value})}
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>State</Label>
-              <Select
-                value={currentDevice.isOn ? 'On' : 'Off'}
-                onChange={(e) => setCurrentDevice({
-                  ...currentDevice, 
-                  isOn: e.target.value === 'On'
-                })}
-              >
-                <option value="On">On</option>
-                <option value="Off">Off</option>
-              </Select>
             </FormGroup>
             <SubmitButton onClick={handleEditDevice}>
               Save Changes
