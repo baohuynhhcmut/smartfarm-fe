@@ -358,14 +358,14 @@ const DashboardAdmin = () => {
           <Button
             variant="outline"
             className="border-green-600 text-green-700 hover:bg-green-50"
-            onClick={() => navigate("/admin/user")}
+            onClick={() => navigate("/admin/users")}
           >
             Manage Users
           </Button>
           <Button
             variant="outline"
             className="border-green-600 text-green-700 hover:bg-green-50"
-            onClick={() => navigate("/admin/device")}
+            onClick={() => navigate("/admin/devices")}
           >
             Manage Devices
           </Button>
