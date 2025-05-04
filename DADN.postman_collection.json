@@ -1,0 +1,1086 @@
+{
+	"info": {
+		"_postman_id": "019dea1c-9837-4cd5-b87c-f646bbd5ae2a",
+		"name": "DADN",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38430139"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user2\",\r\n    \"password\": \"123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/login/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"login",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/user",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by email",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\":\"user2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/email",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"email"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Info By Token",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "jwt",
+							"jwt": [
+								{
+									"key": "payload",
+									"value": "",
+									"type": "string"
+								},
+								{
+									"key": "algorithm",
+									"value": "HS256",
+									"type": "string"
+								},
+								{
+									"key": "isSecretBase64Encoded",
+									"value": false,
+									"type": "boolean"
+								},
+								{
+									"key": "addTokenTo",
+									"value": "header",
+									"type": "string"
+								},
+								{
+									"key": "headerPrefix",
+									"value": "Bearer",
+									"type": "string"
+								},
+								{
+									"key": "queryParamKey",
+									"value": "token",
+									"type": "string"
+								},
+								{
+									"key": "header",
+									"value": "{}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTk1M2ZkNWQ5NzAyODBhMGIwOTAiLCJlbWFpbCI6InVzZXIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NDU5MTQxMDgsImV4cCI6MTc0NjAwMDUwOH0.z24XR-3r57pnqQeu8H3SlaY-h5A-J554j6pbN4MR3Xc",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/getByToken",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"getByToken"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2",
+									"disabled": true
+								},
+								{
+									"key": "password",
+									"value": "123",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user role user",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/user/getRoleUser",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"getRoleUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user by name",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/user/getByName?name=USER 2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"getByName"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "USER 2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get garden by email",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/user/getGarden?email=user2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"getGarden"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new user (register)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user5\",\r\n    \"password\": \"123\",\r\n    \"name\": \"USER 5\",\r\n    \"phone_number\": \"0123456789\",\r\n    \"street\": \"1A\",\r\n    \"city\": \"TP Thủ Đức\",\r\n    \"state\": \"Ho Chi Minh City\",\r\n    \"latitude\": 10.862624,\r\n    \"longitude\": 106.795492\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create new user (no garden)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"password\": \"123\",\r\n    \"phone_number\": \"0123456789\",\r\n    \"street\": \"1A\",\r\n    \"city\": \"TP Thủ Đức\",\r\n    \"state\": \"Ho Chi Minh City\",\r\n    \"latitude\": 10.862624,\r\n    \"longitude\": 106.795492\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/create",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add garden for existed user",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"gardens\": [\r\n        {  \r\n            \"name\": \"Garden2_user4\",\r\n            \"latitude\": 10.862954, \r\n            \"longitude\": 106.797323\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/addGarden",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"addGarden"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"oldPassword\": \"123\",\r\n    \"newPassword\": \"124\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/updatePassword",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"updatePassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateUserInfo (no garden, no password)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"phone_number\": \"9876543210\",\r\n    \"street\": \"Xa lộ Hà Nội\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/updateUserInfo",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"updateUserInfo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update garden (one garden)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"name\": \"Garden3_user4\",\r\n    \"newName\": \"Garden1_user4\",\r\n    \"latitude\": 10.862959,\r\n    \"longitude\": 106.797355\r\n    \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/updateGarden/",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"updateGarden",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteUser (by email)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/deleteUser",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"deleteUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete Garden (email, name)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"name\": \"Garden2_user4\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/deleteGarden",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"deleteGarden"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "weather",
+			"item": [
+				{
+					"name": "GET WEATHER",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/weather/?email=user2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"weather",
+								""
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Device",
+			"item": [
+				{
+					"name": "get All Device",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getAllDevice",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getAllDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By Id",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceById?device_id=dev001",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceById"
+							],
+							"query": [
+								{
+									"key": "device_id",
+									"value": "dev001"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By category",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByCategory?category=sensor",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByCategory"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "sensor"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get device by user (email)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByUser?email=user2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByUser"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By Location (lat,lon)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByLocation?latitude=10.772112&longitude=106.657883",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByLocation"
+							],
+							"query": [
+								{
+									"key": "latitude",
+									"value": "10.772112"
+								},
+								{
+									"key": "longitude",
+									"value": "106.657883"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By GardenName",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByGardenName?garden_name=Garden1_User2",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByGardenName"
+							],
+							"query": [
+								{
+									"key": "garden_name",
+									"value": "Garden1_User2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By Type",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByType?type=temperature sensor",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByType"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "temperature sensor"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By User (email) And Category",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByUserAndCategory?email=user2&category=device",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByUserAndCategory"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2"
+								},
+								{
+									"key": "category",
+									"value": "device"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Device By User (email) And Type",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByUserAndType?email=user2&type=led light",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByUserAndType"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "user2"
+								},
+								{
+									"key": "type",
+									"value": "led light"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getDeviceByIsActive",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/device/getDeviceByIsActive?is_active=false",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"getDeviceByIsActive"
+							],
+							"query": [
+								{
+									"key": "is_active",
+									"value": "false"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create device",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"device_name\": \"Soil moisture Sensor\",\r\n    \"type\": \"soil moisture sensor\",\r\n    \"user\": \"user3\",\r\n    \"location\": {\r\n      \"garden_name\": \"Garden1_User3\",\r\n      \"latitude\": 10.783112,\r\n      \"longitude\": 106.671883\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/createDevice",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"createDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update Device By User (device_id, user, location)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"user\": \"user3\",\r\n    \"location\": {\r\n      \"garden_name\": \"Garden1_User3\",\r\n      \"latitude\": 10.783112,\r\n      \"longitude\": 106.671883\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/updateDeviceByUser",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"updateDeviceByUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update Device By Timer",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"time_on\": \"2025-05-01T04:00:00Z\",\r\n    \"time_off\": \"2025-05-01T06:00:00Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/updateDeviceByTimer",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"updateDeviceByTimer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update Device By Active",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"is_active\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/updateDeviceByActive",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"updateDeviceByActive"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete Device By Id",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev012\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/deleteDeviceById",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"deleteDeviceById"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete Device By User",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user\": \"user3\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/deleteDeviceByUser",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"deleteDeviceByUser"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Data",
+			"item": [
+				{
+					"name": "get Data By Month",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/data/getDataByMonth?user=user2&device_name=Temp Sensor - Garden1_User2&garden_name=Garden1_User2&year=2025&month=5",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"data",
+								"getDataByMonth"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "user2"
+								},
+								{
+									"key": "device_name",
+									"value": "Temp Sensor - Garden1_User2"
+								},
+								{
+									"key": "garden_name",
+									"value": "Garden1_User2"
+								},
+								{
+									"key": "year",
+									"value": "2025"
+								},
+								{
+									"key": "month",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get Data By Year",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/data/getDataByYear?user=user2&device_name=Temp Sensor - Garden1_User2&garden_name=Garden1_User2&year=2025",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"data",
+								"getDataByYear"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "user2"
+								},
+								{
+									"key": "device_name",
+									"value": "Temp Sensor - Garden1_User2"
+								},
+								{
+									"key": "garden_name",
+									"value": "Garden1_User2"
+								},
+								{
+									"key": "year",
+									"value": "2025"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

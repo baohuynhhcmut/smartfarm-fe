@@ -1,19 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Card } from "antd";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  Tooltip,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
 } from "recharts";
-import { userData, deviceData } from "./data/sampleData";
 import {
   FaUsers,
   FaDev,
@@ -23,46 +21,103 @@ import {
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { MdInsertChart } from "react-icons/md";
+
+const API_URL = "http://localhost:8081/api/v1"; // Thay bằng BASE_URL thực tế
+
+interface Device {
+  _id: string;
+  device_id: string;
+  device_name: string;
+  feed: string;
+  type: string;
+  category: string;
+  user: string;
+  time_on: string | null;
+  time_off: string | null;
+  is_active: boolean;
+  location: {
+    garden_name: string;
+    latitude: number;
+    longitude: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 const DashboardAdmin = () => {
-  const [filteredUserData] = useState(userData);
-  const [filteredDeviceData] = useState(deviceData);
+  const [users, setUsers] = useState([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+        const [userRes, deviceRes] = await Promise.all([
+          axios.get(`${API_URL}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${API_URL}/device/getAllDevice`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        setUsers(userRes.data.data || []);
+        setDevices(deviceRes.data.data || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Lỗi khi tải dữ liệu");
+        setUsers([]);
+        setDevices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Nếu user không có trường is_active, mặc định tất cả là active
   const totalUsers = {
-    active: filteredUserData.reduce((sum, item) => sum + item.active, 0),
-    inactive: filteredUserData.reduce((sum, item) => sum + item.inactive, 0),
+    active: users.length,
+    inactive: 0,
   };
 
+  // Device có trường is_active
   const totalDevices = {
-    active: filteredDeviceData.reduce((sum, item) => sum + item.active, 0),
-    inactive: filteredDeviceData.reduce((sum, item) => sum + item.inactive, 0),
+    active: devices.filter((d) => d.is_active).length,
+    inactive: devices.filter((d) => !d.is_active).length,
   };
 
+  // Pie chart data
   const userPieData = [
     { name: "Active", value: totalUsers.active },
     { name: "Inactive", value: totalUsers.inactive },
   ];
-
   const devicePieData = [
     { name: "Active", value: totalDevices.active },
     { name: "Inactive", value: totalDevices.inactive },
   ];
 
+  // Thống kê mẫu cho các card (có thể sửa lại nếu muốn lấy số liệu thực tế)
   const stats = [
     {
       title: "Total Users",
-      value: "1,234",
+      value: totalUsers.active.toString(),
       icon: <FaUsers className="h-6 w-6 text-blue-500" />,
-      change: "+12%",
+      change: "+0%",
       changeType: "increase",
       link: "/admin/user",
     },
     {
       title: "Active Devices",
-      value: "567",
+      value: totalDevices.active.toString(),
       icon: <FaDev className="h-6 w-6 text-green-500" />,
-      change: "+8%",
+      change: "+0%",
       changeType: "increase",
       link: "/admin/device",
     },
@@ -84,6 +139,7 @@ const DashboardAdmin = () => {
     },
   ];
 
+  // Recent activities mẫu (có thể fetch từ API nếu backend có)
   const recentActivities = [
     {
       user: "John Doe",
@@ -110,6 +166,12 @@ const DashboardAdmin = () => {
       type: "user",
     },
   ];
+
+  // Dữ liệu mẫu để hiển thị trục khi chưa có dữ liệu thực
+  const emptyChartData = [{ time: "", value: 0 }];
+
+  if (loading) return <div>Đang tải dữ liệu...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="space-y-6">
@@ -156,34 +218,23 @@ const DashboardAdmin = () => {
             <CardTitle>User Growth</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground relative rounded-lg shadow-inner bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-200">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={filteredUserData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(value) => {
-                      const [year, month] = value.split("-");
-                      return `${month}/${year}`;
-                    }}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="active"
-                    stroke="#52c41a"
-                    name="Active Users"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="inactive"
-                    stroke="#ff4d4f"
-                    name="Inactive Users"
-                  />
+                <LineChart data={emptyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="time" tick={{ fill: "#b0b0b0" }} />
+                  <YAxis tick={{ fill: "#b0b0b0" }} />
                 </LineChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 rounded-lg animate-fade-in">
+                <MdInsertChart className="text-5xl text-gray-300 mb-2" />
+                <span className="text-base font-medium text-gray-500">
+                  Chưa có dữ liệu thống kê theo thời gian
+                </span>
+                <span className="text-xs text-gray-400 mt-1">
+                  Dữ liệu sẽ hiển thị khi có hoạt động mới
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -193,34 +244,23 @@ const DashboardAdmin = () => {
             <CardTitle>Device Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground relative rounded-lg shadow-inner bg-gradient-to-br from-gray-50 to-white border border-dashed border-gray-200">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={filteredDeviceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(value) => {
-                      const [year, month] = value.split("-");
-                      return `${month}/${year}`;
-                    }}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="active"
-                    stroke="#13c2c2"
-                    name="Active Devices"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="inactive"
-                    stroke="#ff4d4f"
-                    name="Inactive Devices"
-                  />
+                <LineChart data={emptyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="time" tick={{ fill: "#b0b0b0" }} />
+                  <YAxis tick={{ fill: "#b0b0b0" }} />
                 </LineChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 rounded-lg animate-fade-in">
+                <MdInsertChart className="text-5xl text-gray-300 mb-2" />
+                <span className="text-base font-medium text-gray-500">
+                  Chưa có dữ liệu thống kê theo thời gian
+                </span>
+                <span className="text-xs text-gray-400 mt-1">
+                  Dữ liệu sẽ hiển thị khi có hoạt động mới
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

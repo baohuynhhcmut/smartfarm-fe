@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 import {
   Table,
   TableBody,
@@ -27,10 +28,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaUserPlus, FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { userApi, User } from "@/api/userApi";
 import { getAllUser } from "@/api/admin/user";
+
+// API URL của backend
+const API_URL = "http://localhost:8081/api/v1";
+
+interface User {
+  _id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone_number?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  gardens?: Array<{
+    _id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Device {
+  _id: string;
+  device_id: string;
+  device_name: string;
+  feed: string;
+  type: string;
+  category: string;
+  user: string;
+  time_on: string | null;
+  time_off: string | null;
+  is_active: boolean;
+  location: {
+    garden_name: string;
+    latitude: number;
+    longitude: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 const UserPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -46,200 +93,83 @@ const UserPage = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [sortField, setSortField] = useState<
-    "name" | "role" | "status" | "deviceCount" | "gardenCount"
-  >("name");
+  const [sortField, setSortField] = useState<keyof User | "gardens.length">(
+    "name"
+  );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [newUser, setNewUser] = useState<Partial<User>>({
     name: "",
     email: "",
-    role: "user",
-    status: "active",
-    address: "",
-    phone: "",
-    deviceCount: 0,
-    gardenCount: 0,
+    role: "USER",
+    phone_number: "",
+    address: {
+      street: "",
+      country: "",
+    },
   });
+  const [isViewDevicesDialogOpen, setIsViewDevicesDialogOpen] = useState(false);
+  const [userDevices, setUserDevices] = useState<Device[]>([]);
 
-  const initialUsers = useMemo<User[]>(
-    () => [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        role: "admin" as const,
-        status: "active" as const,
-        createdAt: "2024-01-01",
-        lastLogin: "2024-02-25",
-        address: "123 Main St, City A",
-        phone: "+1234567890",
-        deviceCount: 5,
-        gardenCount: 3,
-      },
-      {
-        id: "2",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-05",
-        lastLogin: "2024-02-24",
-        address: "456 Oak St, City B",
-        phone: "+1234567891",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "3",
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-10",
-        lastLogin: "2024-02-15",
-        address: "789 Pine St, City C",
-        phone: "+1234567892",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "4",
-        name: "Alice Brown",
-        email: "alice@example.com",
-        role: "user" as const,
-        status: "pending" as const,
-        createdAt: "2024-01-15",
-        lastLogin: "2024-02-10",
-        address: "321 Elm St, City D",
-        phone: "+1234567893",
-        deviceCount: 1,
-        gardenCount: 1,
-      },
-      {
-        id: "5",
-        name: "Charlie Wilson",
-        email: "charlie@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-20",
-        lastLogin: "2024-02-05",
-        address: "654 Maple St, City E",
-        phone: "+1234567894",
-        deviceCount: 3,
-        gardenCount: 2,
-      },
-      {
-        id: "6",
-        name: "Diana Miller",
-        email: "diana@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-25",
-        lastLogin: "2024-01-30",
-        address: "987 Cedar St, City F",
-        phone: "+1234567895",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "7",
-        name: "Edward Davis",
-        email: "edward@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-01-30",
-        lastLogin: "2024-02-01",
-        address: "147 Birch St, City G",
-        phone: "+1234567896",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "8",
-        name: "Fiona Clark",
-        email: "fiona@example.com",
-        role: "user" as const,
-        status: "pending" as const,
-        createdAt: "2024-02-01",
-        lastLogin: "2024-02-15",
-        address: "258 Spruce St, City H",
-        phone: "+1234567897",
-        deviceCount: 1,
-        gardenCount: 0,
-      },
-      {
-        id: "9",
-        name: "George White",
-        email: "george@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-02-05",
-        lastLogin: "2024-02-20",
-        address: "369 Aspen St, City I",
-        phone: "+1234567898",
-        deviceCount: 4,
-        gardenCount: 2,
-      },
-      {
-        id: "10",
-        name: "Hannah Lee",
-        email: "hannah@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-02-10",
-        lastLogin: "2024-02-18",
-        address: "741 Willow St, City J",
-        phone: "+1234567899",
-        deviceCount: 0,
-        gardenCount: 0,
-      },
-      {
-        id: "11",
-        name: "Ian Taylor",
-        email: "ian@example.com",
-        role: "user" as const,
-        status: "active" as const,
-        createdAt: "2024-02-15",
-        lastLogin: "2024-02-22",
-        address: "852 Redwood St, City K",
-        phone: "+1234567900",
-        deviceCount: 2,
-        gardenCount: 1,
-      },
-      {
-        id: "12",
-        name: "Anna Wilson",
-        email: "anna@example.com",
-        role: "user" as const,
-        status: "inactive" as const,
-        createdAt: "2024-01-12",
-        lastLogin: "2024-02-20",
-        address: "963 Poplar St, City L",
-        phone: "+1234567901",
-        deviceCount: 3,
-        gardenCount: 2,
-      },
-    ],
-    []
-  );
+  const handleTokenError = () => {
+    // Xóa token khi hết hạn hoặc không hợp lệ
+    localStorage.removeItem("token");
+    // Chuyển về trang login
+    window.location.href = "/login";
+  };
 
-  useEffect(() => {
-    fetchUsers();
+  const handleApiError = useCallback((err: unknown) => {
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 401) {
+        // Token hết hạn hoặc không hợp lệ
+        toast.error("Session expired. Please login again");
+        handleTokenError();
+      } else if (err.response?.status === 403) {
+        // Token không có quyền thực hiện hành động
+        toast.error("You don't have permission to perform this action");
+      } else {
+        toast.error(err.response?.data?.message || "Operation failed");
+      }
+    } else {
+      toast.error("An unexpected error occurred");
+    }
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await userApi.getAllUsers();
-      setUsers(data);
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const response = await axios.get(`${API_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Raw API Response:", response);
+
+      const usersData = response.data.data || [];
+      console.log("Users data:", usersData);
+
+      setUsers(usersData);
     } catch (err) {
-      setError("Failed to fetch users");
-      toast.error("Failed to fetch users");
+      console.error("Error fetching users:", err);
+      handleApiError(err);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [handleApiError]);
+
+  useEffect(() => {
+    console.log("Current users state:", users);
+  }, [users]);
+
+  useEffect(() => {
+    console.log("Component mounted, fetching users...");
+    fetchUsers();
+  }, [fetchUsers]);
 
   const validateForm = (user: Partial<User>) => {
     const errors: Record<string, string> = {};
@@ -248,11 +178,10 @@ const UserPage = () => {
     else if (!/\S+@\S+\.\S+/.test(user.email))
       errors.email = "Invalid email format";
     if (!user.role) errors.role = "Role is required";
-    if (!user.status) errors.status = "Status is required";
-    if (user.phone) {
-      const phoneNumber = user.phone.replace(/\D/g, "");
+    if (user.phone_number) {
+      const phoneNumber = user.phone_number.replace(/\D/g, "");
       if (phoneNumber.length !== 10) {
-        errors.phone = "Phone number must be exactly 10 digits";
+        errors.phone_number = "Phone number must be exactly 10 digits";
       }
     }
     return errors;
@@ -266,25 +195,73 @@ const UserPage = () => {
     }
 
     try {
-      const createdUser = await userApi.createUser(
-        newUser as Omit<User, "id" | "createdAt">
-      );
-      setUsers([...users, createdUser]);
-      setIsAddDialogOpen(false);
-      setNewUser({
-        name: "",
-        email: "",
-        role: "user",
-        status: "active",
-        address: "",
-        phone: "",
-        deviceCount: 0,
-        gardenCount: 0,
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const userData = {
+        email: newUser.email,
+        password: "123456",
+        name: newUser.name,
+        phone_number: newUser.phone_number,
+        street: newUser.address?.street || "",
+        city: newUser.address?.city || "",
+        state: newUser.address?.state || "",
+        latitude: 10.862624, // Giá trị mặc định
+        longitude: 106.795492, // Giá trị mặc định
+      };
+
+      console.log("Sending user data:", userData);
+
+      const response = await axios.post(`${API_URL}/user/register`, userData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-      setFormErrors({});
-      toast.success("User added successfully");
+
+      console.log("Add user response:", response.data);
+
+      if (response.data && response.data.data) {
+        const newUserData = {
+          ...response.data.data,
+          gardens: [],
+        };
+        setUsers([...users, newUserData]);
+        setIsAddDialogOpen(false);
+        setNewUser({
+          name: "",
+          email: "",
+          role: "USER",
+          phone_number: "",
+          address: {
+            street: "",
+            city: "",
+            state: "",
+          },
+        });
+        setFormErrors({});
+        toast.success("User added successfully");
+      } else {
+        console.error("Invalid response format:", response.data);
+        toast.error("Failed to add user: Invalid response format");
+      }
     } catch (err) {
-      toast.error("Failed to add user");
+      console.error("Error adding user:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Error response:", err.response?.data);
+        console.error("Error status:", err.response?.status);
+        console.error("Error headers:", err.response?.headers);
+
+        if (err.response?.status === 400) {
+          toast.error(err.response?.data?.message || "Invalid user data");
+        } else if (err.response?.status === 404) {
+          toast.error("Endpoint does not exist");
+        } else {
+          toast.error(err.response?.data?.message || "Failed to add user");
+        }
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
@@ -298,19 +275,81 @@ const UserPage = () => {
     }
 
     try {
-      const updatedUser = await userApi.updateUser(
-        selectedUser.id,
-        selectedUser
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const userData = {
+        email: selectedUser.email,
+        name: selectedUser.name,
+        role: selectedUser.role,
+        phone_number: selectedUser.phone_number,
+        address: {
+          street: selectedUser.address?.street || "",
+        },
+      };
+
+      console.log("Updating user data:", userData);
+
+      const response = await axios.patch(
+        `${API_URL}/user/updateUserInfo`,
+        userData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-      setUsers(
-        users.map((user) => (user.id === selectedUser.id ? updatedUser : user))
-      );
-      setIsEditDialogOpen(false);
-      setSelectedUser(null);
-      setFormErrors({});
-      toast.success("User updated successfully");
+
+      console.log("Update response:", response.data);
+
+      if (response.data && response.data.status === 200) {
+        // Cập nhật thông tin user trong danh sách
+        setUsers(
+          users.map((user) =>
+            user.email === selectedUser.email
+              ? {
+                  ...user,
+                  name: selectedUser.name,
+                  role: selectedUser.role,
+                  phone_number: selectedUser.phone_number,
+                  address: {
+                    ...user.address,
+                    street: selectedUser.address?.street || "",
+                  },
+                }
+              : user
+          )
+        );
+        setIsEditDialogOpen(false);
+        setSelectedUser(null);
+        setFormErrors({});
+        toast.success(response.data.message || "User updated successfully");
+      } else {
+        console.error("Invalid response format:", response.data);
+        toast.error("Failed to update user: Invalid response format");
+      }
     } catch (err) {
-      toast.error("Failed to update user");
+      console.error("Error updating user:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Error response:", err.response?.data);
+        console.error("Error status:", err.response?.status);
+        console.error("Error headers:", err.response?.headers);
+
+        if (err.response?.status === 400) {
+          if (err.response?.data?.message === "User not found!") {
+            toast.error("User not found. Please check the email address.");
+          } else {
+            toast.error(err.response?.data?.message || "Invalid user data");
+          }
+        } else if (err.response?.status === 404) {
+          toast.error("Endpoint does not exist");
+        } else {
+          toast.error(err.response?.data?.message || "Failed to update user");
+        }
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
@@ -318,19 +357,53 @@ const UserPage = () => {
     if (!selectedUser) return;
 
     try {
-      await userApi.deleteUser(selectedUser.id);
-      setUsers(users.filter((user) => user.id !== selectedUser.id));
-      setIsDeleteDialogOpen(false);
-      setSelectedUser(null);
-      toast.success("User deleted successfully");
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      console.log("Deleting user with email:", selectedUser.email);
+
+      const response = await axios.delete(`${API_URL}/user/deleteUser`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          email: selectedUser.email,
+        },
+      });
+
+      console.log("Delete response:", response.data);
+
+      if (response.data && response.data.status === 200) {
+        setUsers(users.filter((user) => user.email !== selectedUser.email));
+        setIsDeleteDialogOpen(false);
+        setSelectedUser(null);
+        toast.success(response.data.message || "User deleted successfully");
+      } else {
+        console.error("Invalid response format:", response.data);
+        toast.error("Failed to delete user: Invalid response format");
+      }
     } catch (err) {
-      toast.error("Failed to delete user");
+      console.error("Error deleting user:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Error response:", err.response?.data);
+        console.error("Error status:", err.response?.status);
+        console.error("Error headers:", err.response?.headers);
+
+        if (err.response?.status === 400) {
+          toast.error(err.response?.data?.message || "User not found");
+        } else if (err.response?.status === 404) {
+          toast.error("Endpoint does not exist");
+        } else {
+          toast.error(err.response?.data?.message || "Failed to delete user");
+        }
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
-  const handleSort = (
-    field: "name" | "role" | "status" | "deviceCount" | "gardenCount"
-  ) => {
+  const handleSort = (field: keyof User | "gardens.length") => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -341,30 +414,99 @@ const UserPage = () => {
 
   const filteredUsers = users
     .filter((user) => {
+      const searchTermLower = searchTerm.toLowerCase();
       const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.address?.toLowerCase().includes(searchTerm.toLowerCase());
+        (user.name?.toLowerCase() || "").includes(searchTermLower) ||
+        (user.email?.toLowerCase() || "").includes(searchTermLower) ||
+        (user.address?.street?.toLowerCase() || "").includes(searchTermLower) ||
+        (user.role?.toLowerCase() || "").includes(searchTermLower) ||
+        (user.phone_number?.toLowerCase() || "").includes(searchTermLower);
+
       const matchesRole = filterRole === "all" || user.role === filterRole;
       const matchesStatus =
-        filterStatus === "all" || user.status === filterStatus;
+        filterStatus === "all" ||
+        (filterStatus === "active" && (user.gardens?.length ?? 0) > 0) ||
+        (filterStatus === "inactive" && (user.gardens?.length ?? 0) === 0);
+
       return matchesSearch && matchesRole && matchesStatus;
     })
     .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      if (aValue === undefined && bValue === undefined) return 0;
-      if (aValue === undefined) return 1;
-      if (bValue === undefined) return -1;
+      let aValue: string | number = "";
+      let bValue: string | number = "";
+
+      if (sortField === "gardens.length") {
+        aValue = a.gardens?.length ?? 0;
+        bValue = b.gardens?.length ?? 0;
+      } else if (sortField === "address") {
+        aValue = a.address?.street || "";
+        bValue = b.address?.street || "";
+      } else if (sortField === "role") {
+        aValue = a.role || "";
+        bValue = b.role || "";
+      } else {
+        const value = a[sortField as keyof User];
+        aValue =
+          typeof value === "string" || typeof value === "number" ? value : "";
+        const value2 = b[sortField as keyof User];
+        bValue =
+          typeof value2 === "string" || typeof value2 === "number"
+            ? value2
+            : "";
+      }
+
       if (aValue === bValue) return 0;
       const comparison = aValue < bValue ? -1 : 1;
       return sortDirection === "asc" ? comparison : -comparison;
     });
 
+  console.log("Filtered Users:", filteredUsers);
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  console.log("Current Items:", currentItems);
+  console.log("Current Page:", currentPage);
+  console.log("Total Pages:", Math.ceil(filteredUsers.length / itemsPerPage));
+
+  const handleViewDevices = async (user: User) => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const response = await axios.get(`${API_URL}/device/getDeviceByUser`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          email: user.email,
+        },
+      });
+
+      if (
+        response.data &&
+        response.data.data &&
+        response.data.data.length > 0
+      ) {
+        setUserDevices(response.data.data);
+        setSelectedUser(user);
+        setIsViewDevicesDialogOpen(true);
+      } else {
+        // Hiển thị thông báo khi không có devices
+        toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
+          duration: 3000,
+          position: "top-center",
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching user devices:", err);
+      // Luôn hiển thị thông báo khi có lỗi
+      toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
+        duration: 3000,
+        position: "top-center",
+      });
+    }
+  };
 
   const [userData, setUserData] = useState<any>([]);
   // Fetching API
@@ -395,6 +537,12 @@ const UserPage = () => {
         >
           <strong className="font-bold">Error!</strong>
           <span className="block sm:inline"> {error}</span>
+        </div>
+      )}
+
+      {!isLoading && !error && users.length === 0 && (
+        <div className="text-center py-4">
+          <p>No users found</p>
         </div>
       )}
 
@@ -470,57 +618,18 @@ const UserPage = () => {
                 <div className="col-span-3">
                   <Select
                     value={newUser.role}
-                    onValueChange={(value: string) =>
+                    onValueChange={(value) =>
                       setNewUser({ ...newUser, role: value as User["role"] })
                     }
                   >
-                    <SelectTrigger
-                      className={formErrors.role ? "border-red-500" : ""}
-                    >
+                    <SelectTrigger>
                       <SelectValue placeholder="Select user role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="USER">User</SelectItem>
                     </SelectContent>
                   </Select>
-                  {formErrors.role && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.role}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <div className="col-span-3">
-                  <Select
-                    value={newUser.status}
-                    onValueChange={(value: string) =>
-                      setNewUser({
-                        ...newUser,
-                        status: value as User["status"],
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      className={formErrors.status ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select user status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {formErrors.status && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.status}
-                    </p>
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -530,31 +639,37 @@ const UserPage = () => {
                 <div className="col-span-3">
                   <Input
                     id="address"
-                    value={newUser.address}
+                    value={newUser.address?.street || ""}
                     onChange={(e) =>
-                      setNewUser({ ...newUser, address: e.target.value })
+                      setNewUser({
+                        ...newUser,
+                        address: {
+                          ...newUser.address,
+                          street: e.target.value,
+                        },
+                      })
                     }
                     placeholder="Enter user's address"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">
+                <Label htmlFor="phone_number" className="text-right">
                   Phone
                 </Label>
                 <div className="col-span-3">
                   <Input
-                    id="phone"
-                    value={newUser.phone}
+                    id="phone_number"
+                    value={newUser.phone_number || ""}
                     onChange={(e) =>
-                      setNewUser({ ...newUser, phone: e.target.value })
+                      setNewUser({ ...newUser, phone_number: e.target.value })
                     }
-                    className={formErrors.phone ? "border-red-500" : ""}
+                    className={formErrors.phone_number ? "border-red-500" : ""}
                     placeholder="Enter user's phone number"
                   />
-                  {formErrors.phone && (
+                  {formErrors.phone_number && (
                     <p className="text-red-500 text-sm mt-1">
-                      {formErrors.phone}
+                      {formErrors.phone_number}
                     </p>
                   )}
                 </div>
@@ -590,8 +705,8 @@ const UserPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -602,7 +717,6 @@ const UserPage = () => {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -620,7 +734,14 @@ const UserPage = () => {
                   {sortField === "name" &&
                     (sortDirection === "asc" ? "↑" : "↓")}
                 </TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("email")}
+                >
+                  Email{" "}
+                  {sortField === "email" &&
+                    (sortDirection === "asc" ? "↑" : "↓")}
+                </TableHead>
                 <TableHead
                   className="cursor-pointer"
                   onClick={() => handleSort("role")}
@@ -631,27 +752,26 @@ const UserPage = () => {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer"
-                  onClick={() => handleSort("status")}
+                  onClick={() => handleSort("gardens.length")}
                 >
                   Status{" "}
-                  {sortField === "status" &&
-                    (sortDirection === "asc" ? "↑" : "↓")}
-                </TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead
-                  className="cursor-pointer"
-                  onClick={() => handleSort("deviceCount")}
-                >
-                  Devices{" "}
-                  {sortField === "deviceCount" &&
+                  {sortField === "gardens.length" &&
                     (sortDirection === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead
                   className="cursor-pointer"
-                  onClick={() => handleSort("gardenCount")}
+                  onClick={() => handleSort("address")}
                 >
-                  Gardens{" "}
-                  {sortField === "gardenCount" &&
+                  Address{" "}
+                  {sortField === "address" &&
+                    (sortDirection === "asc" ? "↑" : "↓")}
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("phone_number")}
+                >
+                  Phone{" "}
+                  {sortField === "phone_number" &&
                     (sortDirection === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Actions</TableHead>
@@ -659,13 +779,13 @@ const UserPage = () => {
             </TableHeader>
             <TableBody>
               {currentItems.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user._id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        user.role === "admin"
+                        user.role === "ADMIN"
                           ? "bg-purple-100 text-purple-800"
                           : "bg-blue-100 text-blue-800"
                       }`}
@@ -676,21 +796,31 @@ const UserPage = () => {
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        user.status === "active"
+                        (user.gardens?.length ?? 0) > 0
                           ? "bg-green-100 text-green-800"
-                          : user.status === "inactive"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {user.status}
+                      {(user.gardens?.length ?? 0) > 0 ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
-                  <TableCell>{user.address}</TableCell>
-                  <TableCell>{user.deviceCount}</TableCell>
-                  <TableCell>{user.gardenCount}</TableCell>
+                  <TableCell>
+                    {user.address
+                      ? `${user.address.street || ""}, ${
+                          user.address.city || ""
+                        }, ${user.address.state || ""}`
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell>{user.phone_number || "N/A"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDevices(user)}
+                      >
+                        <FaEye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -728,12 +858,15 @@ const UserPage = () => {
               Previous
             </Button>
             <span className="py-2">
-              Page {currentPage} of {totalPages}
+              Page {currentPage} of{" "}
+              {Math.ceil(filteredUsers.length / itemsPerPage)}
             </span>
             <Button
               variant="outline"
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={
+                currentPage === Math.ceil(filteredUsers.length / itemsPerPage)
+              }
             >
               Next
             </Button>
@@ -746,165 +879,106 @@ const UserPage = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user information and permissions
-            </DialogDescription>
           </DialogHeader>
-          {selectedUser && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">
-                  Name
-                </Label>
-                <div className="col-span-3">
-                  <Input
-                    id="edit-name"
-                    value={selectedUser.name}
-                    onChange={(e) =>
-                      setSelectedUser({ ...selectedUser, name: e.target.value })
-                    }
-                    className={formErrors.name ? "border-red-500" : ""}
-                    placeholder="Enter user's full name"
-                  />
-                  {formErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-email" className="text-right">
-                  Email
-                </Label>
-                <div className="col-span-3">
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={selectedUser.email}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        email: e.target.value,
-                      })
-                    }
-                    className={formErrors.email ? "border-red-500" : ""}
-                    placeholder="Enter user's email address"
-                  />
-                  {formErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-role" className="text-right">
-                  Role
-                </Label>
-                <div className="col-span-3">
-                  <Select
-                    value={selectedUser.role}
-                    onValueChange={(value: string) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        role: value as User["role"],
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      className={formErrors.role ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select user role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {formErrors.role && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.role}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-status" className="text-right">
-                  Status
-                </Label>
-                <div className="col-span-3">
-                  <Select
-                    value={selectedUser.status}
-                    onValueChange={(value: string) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        status: value as User["status"],
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      className={formErrors.status ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select user status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {formErrors.status && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.status}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-address" className="text-right">
-                  Address
-                </Label>
-                <div className="col-span-3">
-                  <Input
-                    id="edit-address"
-                    value={selectedUser.address}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        address: e.target.value,
-                      })
-                    }
-                    placeholder="Enter user's address"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-phone" className="text-right">
-                  Phone
-                </Label>
-                <div className="col-span-3">
-                  <Input
-                    id="edit-phone"
-                    value={selectedUser.phone}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        phone: e.target.value,
-                      })
-                    }
-                    className={formErrors.phone ? "border-red-500" : ""}
-                    placeholder="Enter user's phone number"
-                  />
-                  {formErrors.phone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.phone}
-                    </p>
-                  )}
-                </div>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Name
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-name"
+                  value={selectedUser?.name || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      name: e.target.value,
+                    })
+                  }
+                />
               </div>
             </div>
-          )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-email" className="text-right">
+                Email
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-email"
+                  value={selectedUser?.email || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      email: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-role" className="text-right">
+                Role
+              </Label>
+              <div className="col-span-3">
+                <Select
+                  value={selectedUser?.role || "USER"}
+                  onValueChange={(value) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      role: value as User["role"],
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select user role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="USER">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-address" className="text-right">
+                Address
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-address"
+                  value={selectedUser?.address?.street || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      address: {
+                        ...selectedUser?.address,
+                        street: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Enter user's address"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-phone_number" className="text-right">
+                Phone
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-phone_number"
+                  value={selectedUser?.phone_number || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      phone_number: e.target.value,
+                    })
+                  }
+                  placeholder="Enter user's phone number"
+                />
+              </div>
+            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -912,7 +986,7 @@ const UserPage = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleEditUser}>Save Changes</Button>
+            <Button onClick={handleEditUser}>Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -936,6 +1010,123 @@ const UserPage = () => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteUser}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Devices Dialog */}
+      <Dialog
+        open={isViewDevicesDialogOpen}
+        onOpenChange={setIsViewDevicesDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>
+              Devices and Sensors of {selectedUser?.name}
+            </DialogTitle>
+            <DialogDescription>
+              View all devices and sensors associated with this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {userDevices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="text-muted-foreground text-center">
+                  <p className="text-lg font-medium">No devices found</p>
+                  <p className="text-sm mt-2">
+                    This user doesn't have any devices or sensors yet.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Devices Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Devices</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Device Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Garden</TableHead>
+                        <TableHead>Feed</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userDevices
+                        .filter((device) => device.category === "device")
+                        .map((device) => (
+                          <TableRow key={device._id}>
+                            <TableCell>{device.device_name}</TableCell>
+                            <TableCell>{device.type}</TableCell>
+                            <TableCell>{device.location.garden_name}</TableCell>
+                            <TableCell>{device.feed}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  device.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {device.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Sensors Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Sensors</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sensor Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Garden</TableHead>
+                        <TableHead>Feed</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userDevices
+                        .filter((device) => device.category === "sensor")
+                        .map((device) => (
+                          <TableRow key={device._id}>
+                            <TableCell>{device.device_name}</TableCell>
+                            <TableCell>{device.type}</TableCell>
+                            <TableCell>{device.location.garden_name}</TableCell>
+                            <TableCell>{device.feed}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  device.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {device.is_active ? "Active" : "Inactive"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDevicesDialogOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
