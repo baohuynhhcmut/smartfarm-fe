@@ -1,8 +1,142 @@
 import { useState } from "react";
-import background from "../../assets/backgr1.jpeg"; // Import ảnh nền
+import background from "../../assets/backgr1.jpeg";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: "Peiuthanhlong@gmail.com",
+    password: "******************",
+    name: "",
+    phone_number: "",
+    street: "",
+    city: "",
+    state: "",
+    latitude: 0,
+    longitude: 0,
+    confirmPassword: ""
+  });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const BASE_URL = "http://localhost:8081/api/v1";
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    try {
+      // Login API call
+      const response = await fetch(`${BASE_URL}/user/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+  
+      // Check response status first
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Login failed with status: " + response.status);
+      }
+  
+      // Then check content-type
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(text || "Invalid response from server");
+      }
+  
+      const data = await response.json();
+  
+      // Check token exists
+      if (!data.token) {
+        throw new Error("No authentication token received");
+      }
+  
+      // Save token and user data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+  
+      // Simplified role handling - assuming the login response already contains role
+      if (data.user.role === "ADMIN") {
+        navigate("/admin");
+      } else if (data.user.role === "USER") {
+        navigate("/user");
+      } else {
+        throw new Error("Unknown user role");
+      }
+  
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during login");
+      console.error("Login error:", err);
+    }
+  };
+  
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+  
+    // Kiểm tra password match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${BASE_URL}/user/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          phone_number: formData.phone_number,
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          latitude: formData.latitude,
+          longitude: formData.longitude
+        })
+      });
+  
+      // Kiểm tra content-type trước khi parse JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(text || "Invalid registration response");
+      }
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+  
+      // Nếu đăng ký thành công, chuyển sang form login
+      setIsLogin(true);
+      setError("");
+      alert("Registration successful! Please log in.");
+  
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during registration");
+      console.error("Registration error:", err);
+    }
+  };
 
   return (
     <div
@@ -23,16 +157,19 @@ const Login = () => {
           <>
             <h2 className="text-gray-600 text-sm">WELCOME BACK</h2>
             <h1 className="text-2xl font-bold mb-6">Log In to your Account</h1>
-            <form>
+            {error && <div className="text-red-500 mb-4">{error}</div>}
+            <form onSubmit={handleLogin}>
               <div className="mb-4">
-                <label className="block text-gray-700" htmlFor="email">
+                <label className="block text-gray-700">
                   Email
                 </label>
                 <input
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  type="email"
+                  type="text"
                   id="email"
-                  defaultValue="Peiuthanhlong@gmail.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="mb-4 relative">
@@ -43,7 +180,9 @@ const Login = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   type="password"
                   id="password"
-                  defaultValue="******************"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
                 />
                 <i className="fas fa-eye absolute right-3 top-10 text-gray-500"></i>
               </div>
@@ -59,7 +198,10 @@ const Login = () => {
                   Forgot Password?
                 </a>
               </div>
-              <button className="w-full bg-pink-500 text-white py-2 rounded-lg font-bold hover:bg-pink-600 transition duration-300">
+              <button 
+                type="submit"
+                className="w-full bg-pink-500 text-white py-2 rounded-lg font-bold hover:bg-pink-600 transition duration-300"
+              >
                 CONTINUE
               </button>
             </form>
@@ -77,7 +219,8 @@ const Login = () => {
           <>
             <h2 className="text-gray-600 text-sm">CREATE ACCOUNT</h2>
             <h1 className="text-2xl font-bold mb-6">Sign Up</h1>
-            <form>
+            {error && <div className="text-red-500 mb-4">{error}</div>}
+            <form onSubmit={handleRegister}>
               <div className="mb-4">
                 <label className="block text-gray-700" htmlFor="name">
                   Your Name
@@ -86,7 +229,10 @@ const Login = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   type="text"
                   id="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder="Enter your name"
+                  required
                 />
               </div>
               <div className="mb-4">
@@ -95,9 +241,26 @@ const Login = () => {
                 </label>
                 <input
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  type="email"
+                  type="text"
                   id="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="phone_number">
+                  Phone Number
+                </label>
+                <input
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  type="text"
+                  id="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  placeholder="Enter your phone number"
+                  required
                 />
               </div>
               <div className="mb-4 relative">
@@ -108,7 +271,10 @@ const Login = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   type="password"
                   id="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   placeholder="Enter your password"
+                  required
                 />
                 <i className="fas fa-eye absolute right-3 top-10 text-gray-500"></i>
               </div>
@@ -123,11 +289,59 @@ const Login = () => {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   type="password"
                   id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   placeholder="Confirm your password"
+                  required
                 />
                 <i className="fas fa-eye absolute right-3 top-10 text-gray-500"></i>
               </div>
-              <button className="w-full bg-pink-500 text-white py-2 rounded-lg font-bold hover:bg-pink-600 transition duration-300">
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="street">
+                  Street
+                </label>
+                <input
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  type="text"
+                  id="street"
+                  value={formData.street}
+                  onChange={handleChange}
+                  placeholder="Enter your street address"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="city">
+                  City
+                </label>
+                <input
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  type="text"
+                  id="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Enter your city"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="state">
+                  State
+                </label>
+                <input
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  type="text"
+                  id="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="Enter your state"
+                  required
+                />
+              </div>
+              <button 
+                type="submit"
+                className="w-full bg-pink-500 text-white py-2 rounded-lg font-bold hover:bg-pink-600 transition duration-300"
+              >
                 SIGN UP
               </button>
             </form>
