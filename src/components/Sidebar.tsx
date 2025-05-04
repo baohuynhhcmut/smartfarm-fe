@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   FaHome,
   FaDev,
@@ -6,19 +6,29 @@ import {
   FaChartLine,
   FaEnvelope,
   FaUser,
+  FaSignOutAlt,
 } from "react-icons/fa";
 import "./Sidebar.css";
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Helper function to check if path is active
   const isActive = (path: string) => {
     return location.pathname.startsWith(`/user${path}`);
   };
 
+  const handleLogout = () => {
+    // Add your logout logic here
+    console.log("Logging out...");
+    // For example, clear user session and redirect to login
+    navigate("/");
+  };
+
   return (
     <div className="sidebar">
+      <div className="side">
       <Link
         to="/user"
         className={`sidebar-item ${location.pathname === "/user" ? "active" : ""}`}
@@ -61,7 +71,14 @@ const Sidebar = () => {
         <FaUser />
         <span>My Profile</span>
       </Link>
+      </div>
+      {/* Logout button */}
+      <div className="sidebar-item logout-button" onClick={handleLogout}>
+        <FaSignOutAlt />
+        <span>Logout</span>
+      </div>
     </div>
+      
   );
 };
 

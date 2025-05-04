@@ -1,17 +1,25 @@
-import { Link, useLocation } from "react-router-dom";
-import { FaHome, FaDev, FaUser } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FaHome, FaDev, FaUser, FaSignOutAlt } from "react-icons/fa";
 import "./Sidebar.css"; // Sử dụng chung file CSS với sidebar thông thường
 
 const Sidebarbie = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Helper function to check if path is active
   const isActive = (path: string) => {
     return location.pathname.startsWith(`/admin${path}`);
   };
+  const handleLogout = () => {
+    // Add your logout logic here
+    console.log("Logging out...");
+    // For example, clear user session and redirect to login
+    navigate("/");
+  };
 
   return (
     <div className="sidebar">
+      <div className="side">
       <Link
         to="/admin"
         className={`sidebar-item ${location.pathname === "/admin" ? "active" : ""}`}
@@ -33,6 +41,11 @@ const Sidebarbie = () => {
         <FaUser />
         <span>Users</span>
       </Link>
+      </div>
+      <div className="sidebar-item logout-button" onClick={handleLogout}>
+        <FaSignOutAlt />
+        <span>Logout</span>
+      </div>
     </div>
   );
 };
