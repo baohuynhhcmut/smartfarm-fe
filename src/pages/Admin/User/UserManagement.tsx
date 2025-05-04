@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { FaUserPlus, FaEdit, FaTrash } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { userApi, User } from "@/api/userApi";
+import { getAllUser } from "@/api/admin/user";
 
 const UserPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -365,6 +366,20 @@ const UserPage = () => {
   const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
+  const [userData, setUserData] = useState<any>([]);
+  // Fetching API
+  useEffect(() => {
+    const fetchAPI = async () => {
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjExNzA0OCwiZXhwIjoxNzQ2MjAzNDQ4fQ.Eyh1x_gH5aNOkWhyOQvLy_-ldlerwWlpel6VOs_wVlk"
+      const response = await getAllUser(token)
+      setUserData(response.data)
+    }
+    fetchAPI()
+  },[])
+
+  console.log(userData)
+
+  
   return (
     <div className="space-y-6">
       {isLoading && (
