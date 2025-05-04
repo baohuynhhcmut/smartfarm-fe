@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
+  CartesianGrid,
 } from "recharts";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -16,19 +17,87 @@ type Value = Date | null | [Date | null, Date | null];
 
 const HomePage2 = () => {
   const [selectedDate, setSelectedDate] = useState<Value>(new Date());
+  const [selectedType, setSelectedType] = useState<
+    "temperature" | "light" | "humidity"
+  >("temperature");
 
   const temperatureData = Array.from({ length: 24 }, (_, i) => ({
     day: `${i + 1}`,
     temp: Math.floor(Math.random() * 400) + 50,
   }));
 
+  const lightData = Array.from({ length: 24 }, (_, i) => ({
+    day: `${i + 1}`,
+    light: Math.floor(Math.random() * 1000) + 100,
+  }));
+
+  const humidityData = Array.from({ length: 24 }, (_, i) => ({
+    day: `${i + 1}`,
+    humidity: Math.floor(Math.random() * 50) + 30,
+  }));
+
+  const getChartData = () => {
+    switch (selectedType) {
+      case "temperature":
+        return temperatureData;
+      case "light":
+        return lightData;
+      case "humidity":
+        return humidityData;
+      default:
+        return temperatureData;
+    }
+  };
+
+  const getChartTitle = () => {
+    switch (selectedType) {
+      case "temperature":
+        return "Temperature";
+      case "light":
+        return "Light Intensity";
+      case "humidity":
+        return "Humidity";
+      default:
+        return "Temperature";
+    }
+  };
+
+  const getDataKey = () => {
+    switch (selectedType) {
+      case "temperature":
+        return "temp";
+      case "light":
+        return "light";
+      case "humidity":
+        return "humidity";
+      default:
+        return "temp";
+    }
+  };
+
+  const getUnit = () => {
+    switch (selectedType) {
+      case "temperature":
+        return "°C";
+      case "light":
+        return "lux";
+      case "humidity":
+        return "%";
+      default:
+        return "°C";
+    }
+  };
+
   return (
-    <div className="bg-[#FEF4FF] h-screen flex flex-col items-center justify-between">
-      {/* Hàng chứa thông tin và lịch */}
-      <div className="grid grid-cols-1 md:grid-cols-4 max-w-6xl w-full ">
-        {/* Cột trái - Các thẻ thông tin */}
-        <div className="flex flex-col gap-4 col-span-3">
-          <div className="info-card gray">
+    <div className="bg-container">
+      <div className="grid-container">
+        <div className="info-cards">
+          <div
+            className={`info-card gray ${
+              selectedType === "temperature" ? "selected" : ""
+            }`}
+            onClick={() => setSelectedType("temperature")}
+          >
             <FaTemperatureHigh className="icon" />
             <div>
               <p className="info-text">
@@ -38,7 +107,12 @@ const HomePage2 = () => {
             </div>
           </div>
 
-          <div className="info-card blue">
+          <div
+            className={`info-card blue ${
+              selectedType === "light" ? "selected" : ""
+            }`}
+            onClick={() => setSelectedType("light")}
+          >
             <FaSun className="icon" />
             <div>
               <p className="info-text">
@@ -48,7 +122,12 @@ const HomePage2 = () => {
             </div>
           </div>
 
-          <div className="info-card green">
+          <div
+            className={`info-card green ${
+              selectedType === "humidity" ? "selected" : ""
+            }`}
+            onClick={() => setSelectedType("humidity")}
+          >
             <FaTint className="icon" />
             <div>
               <p className="info-text">
@@ -59,8 +138,7 @@ const HomePage2 = () => {
           </div>
         </div>
 
-        {/* Cột phải - Lịch (dịch sang phải hơn) */}
-        <div className="calendar-container flex items-center justify-end col-span-1">
+        <div className="calendar-container">
           <Calendar
             onChange={setSelectedDate}
             value={selectedDate}
@@ -70,23 +148,40 @@ const HomePage2 = () => {
         </div>
       </div>
 
-      {/* Biểu đồ nhiệt độ */}
-      <div className="chart-container max-w-6xl w-full h-1/2">
-        <h3 className="chart-title">Temperature</h3>
+      <div className="chart-container">
+        <h3 className="chart-title">{getChartTitle()}</h3>
         <ResponsiveContainer width="100%" height="90%">
-          <BarChart data={temperatureData}>
-            <XAxis dataKey="day" />
-            <YAxis />
+          <LineChart data={getChartData()}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis
+              dataKey="day"
+              tick={{ fill: "#666", fontSize: 12 }}
+              axisLine={{ stroke: "#ddd" }}
+            />
+            <YAxis
+              tick={{ fill: "#666", fontSize: 12 }}
+              axisLine={{ stroke: "#ddd" }}
+              unit={getUnit()}
+            />
             <Tooltip
-              cursor={{ fill: "transparent" }}
+              cursor={{ stroke: "rgba(243, 86, 155, 0.1)", strokeWidth: 2 }}
               contentStyle={{
                 backgroundColor: "white",
-                border: "1px solid #ddd",
-                borderRadius: "5px",
+                border: "none",
+                borderRadius: "8px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
               }}
+              formatter={(value) => [`${value} ${getUnit()}`, getChartTitle()]}
             />
-            <Bar dataKey="temp" fill="#F3569B" radius={[5, 5, 0, 0]} />
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey={getDataKey()}
+              stroke="#F3569B"
+              strokeWidth={3}
+              dot={{ fill: "#F3569B", strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: "#F3569B" }}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>

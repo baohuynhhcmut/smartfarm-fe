@@ -77,6 +77,10 @@ interface Device {
   };
   createdAt: string;
   updatedAt: string;
+  threshold: {
+    min: number;
+    max: number;
+  };
 }
 
 const UserPage = () => {
@@ -92,10 +96,7 @@ const UserPage = () => {
   const [itemsPerPage] = useState(10);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [filterRole, setFilterRole] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [sortField, setSortField] = useState<keyof User | "gardens.length">(
-    "name"
-  );
+  const [sortField, setSortField] = useState<keyof User>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [newUser, setNewUser] = useState<Partial<User>>({
     name: "",
@@ -104,11 +105,18 @@ const UserPage = () => {
     phone_number: "",
     address: {
       street: "",
-      country: "",
+      city: "",
+      state: "",
     },
   });
   const [isViewDevicesDialogOpen, setIsViewDevicesDialogOpen] = useState(false);
   const [userDevices, setUserDevices] = useState<Device[]>([]);
+  const [inlineMessage, setInlineMessage] = useState<string | null>(null);
+  const [inlineMessageType, setInlineMessageType] = useState<
+    "info" | "error" | null
+  >(null);
+  const [isNoDeviceDialogOpen, setIsNoDeviceDialogOpen] = useState(false);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
 
   const handleTokenError = () => {
     // Xóa token khi hết hạn hoặc không hợp lệ
@@ -171,24 +179,27 @@ const UserPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const validateForm = (user: Partial<User>) => {
+  const validateForm = (user: Partial<User>, isEdit = false) => {
     const errors: Record<string, string> = {};
     if (!user.name) errors.name = "Name is required";
     if (!user.email) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(user.email))
+    else if (!isEdit && !/\S+@\S+\.\S+/.test(user.email))
       errors.email = "Invalid email format";
-    if (!user.role) errors.role = "Role is required";
+    if (!user.role && !isEdit) errors.role = "Role is required";
     if (user.phone_number) {
       const phoneNumber = user.phone_number.replace(/\D/g, "");
       if (phoneNumber.length !== 10) {
         errors.phone_number = "Phone number must be exactly 10 digits";
       }
     }
+    if (!user.address?.street) errors.street = "Street is required";
+    if (!user.address?.city) errors.city = "City is required";
+    if (!user.address?.state) errors.state = "State is required";
     return errors;
   };
 
   const handleAddUser = async () => {
-    const errors = validateForm(newUser);
+    const errors = validateForm(newUser, false);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -266,10 +277,15 @@ const UserPage = () => {
   };
 
   const handleEditUser = async () => {
-    if (!selectedUser) return;
+    console.log("handleEditUser called", selectedUser);
+    if (!selectedUser) {
+      toast.error("No user selected for editing!");
+      return;
+    }
 
-    const errors = validateForm(selectedUser);
+    const errors = validateForm(selectedUser, true);
     if (Object.keys(errors).length > 0) {
+      console.log("Edit user validate errors:", errors);
       setFormErrors(errors);
       return;
     }
@@ -281,15 +297,16 @@ const UserPage = () => {
       const userData = {
         email: selectedUser.email,
         name: selectedUser.name,
-        role: selectedUser.role,
         phone_number: selectedUser.phone_number,
-        address: {
-          street: selectedUser.address?.street || "",
-        },
+        street: selectedUser.address?.street || "",
+        city: selectedUser.address?.city || "",
+        state: selectedUser.address?.state || "",
       };
 
-      console.log("Updating user data:", userData);
+      // Show success dialog immediately
+      setIsSuccessDialogOpen(true);
 
+      console.log("PATCH updateUserInfo body:", userData);
       const response = await axios.patch(
         `${API_URL}/user/updateUserInfo`,
         userData,
@@ -300,55 +317,46 @@ const UserPage = () => {
           },
         }
       );
+      console.log("PATCH updateUserInfo response:", response.data);
 
-      console.log("Update response:", response.data);
-
-      if (response.data && response.data.status === 200) {
-        // Cập nhật thông tin user trong danh sách
+      if (
+        response.data &&
+        (response.data.status === 200 || response.data.status === "success")
+      ) {
+        // Update the users list with the new data
         setUsers(
           users.map((user) =>
             user.email === selectedUser.email
               ? {
                   ...user,
                   name: selectedUser.name,
-                  role: selectedUser.role,
                   phone_number: selectedUser.phone_number,
                   address: {
                     ...user.address,
                     street: selectedUser.address?.street || "",
+                    city: selectedUser.address?.city || "",
+                    state: selectedUser.address?.state || "",
                   },
                 }
               : user
           )
         );
+
+        // Close the edit dialog and reset states
         setIsEditDialogOpen(false);
         setSelectedUser(null);
         setFormErrors({});
-        toast.success(response.data.message || "User updated successfully");
       } else {
-        console.error("Invalid response format:", response.data);
-        toast.error("Failed to update user: Invalid response format");
+        toast.error(response.data?.message || "Failed to update user");
+        console.error("Update user failed, response:", response.data);
       }
     } catch (err) {
-      console.error("Error updating user:", err);
       if (axios.isAxiosError(err)) {
-        console.error("Error response:", err.response?.data);
-        console.error("Error status:", err.response?.status);
-        console.error("Error headers:", err.response?.headers);
-
-        if (err.response?.status === 400) {
-          if (err.response?.data?.message === "User not found!") {
-            toast.error("User not found. Please check the email address.");
-          } else {
-            toast.error(err.response?.data?.message || "Invalid user data");
-          }
-        } else if (err.response?.status === 404) {
-          toast.error("Endpoint does not exist");
-        } else {
-          toast.error(err.response?.data?.message || "Failed to update user");
-        }
+        toast.error(err.response?.data?.message || "Failed to update user");
+        console.error("Axios error updating user:", err.response?.data);
       } else {
         toast.error("An unexpected error occurred");
+        console.error("Unexpected error updating user:", err);
       }
     }
   };
@@ -403,7 +411,7 @@ const UserPage = () => {
     }
   };
 
-  const handleSort = (field: keyof User | "gardens.length") => {
+  const handleSort = (field: keyof User) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -423,21 +431,14 @@ const UserPage = () => {
         (user.phone_number?.toLowerCase() || "").includes(searchTermLower);
 
       const matchesRole = filterRole === "all" || user.role === filterRole;
-      const matchesStatus =
-        filterStatus === "all" ||
-        (filterStatus === "active" && (user.gardens?.length ?? 0) > 0) ||
-        (filterStatus === "inactive" && (user.gardens?.length ?? 0) === 0);
 
-      return matchesSearch && matchesRole && matchesStatus;
+      return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
       let aValue: string | number = "";
       let bValue: string | number = "";
 
-      if (sortField === "gardens.length") {
-        aValue = a.gardens?.length ?? 0;
-        bValue = b.gardens?.length ?? 0;
-      } else if (sortField === "address") {
+      if (sortField === "address") {
         aValue = a.address?.street || "";
         bValue = b.address?.street || "";
       } else if (sortField === "role") {
@@ -473,38 +474,41 @@ const UserPage = () => {
     try {
       const token =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
-
       const response = await axios.get(`${API_URL}/device/getDeviceByUser`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        params: {
-          email: user.email,
-        },
+        headers: { Authorization: `Bearer ${token}` },
+        params: { email: user.email },
       });
 
       if (
         response.data &&
-        response.data.data &&
+        response.data.status === 200 &&
+        response.data.message === "Find devices successfully" &&
+        Array.isArray(response.data.data) &&
         response.data.data.length > 0
       ) {
         setUserDevices(response.data.data);
         setSelectedUser(user);
         setIsViewDevicesDialogOpen(true);
+        setInlineMessage(null);
+        setInlineMessageType(null);
       } else {
-        // Hiển thị thông báo khi không có devices
-        toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
-          duration: 3000,
-          position: "top-center",
-        });
+        setIsNoDeviceDialogOpen(true);
+        setSelectedUser(user);
       }
     } catch (err) {
-      console.error("Error fetching user devices:", err);
-      // Luôn hiển thị thông báo khi có lỗi
-      toast.info(`${user.name} doesn't have any devices or sensors yet.`, {
-        duration: 3000,
-        position: "top-center",
-      });
+      if (
+        axios.isAxiosError(err) &&
+        (err.response?.status === 404 ||
+          err.response?.data?.message === "No devices found for this user")
+      ) {
+        setIsNoDeviceDialogOpen(true);
+        setSelectedUser(user);
+      } else {
+        setInlineMessage(
+          `Failed to fetch devices for user ${user.name}. Please try again later.`
+        );
+        setInlineMessageType("error");
+      }
     }
   };
 
@@ -611,34 +615,24 @@ const UserPage = () => {
                   )}
                 </div>
               </div>
+              {/* Role is always USER, no dropdown */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="role" className="text-right">
                   Role
                 </Label>
-                <div className="col-span-3">
-                  <Select
-                    value={newUser.role}
-                    onValueChange={(value) =>
-                      setNewUser({ ...newUser, role: value as User["role"] })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select user role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="USER">User</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="col-span-3 flex items-center h-10">
+                  <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                    USER
+                  </span>
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="address" className="text-right">
-                  Address
+                <Label htmlFor="street" className="text-right">
+                  Street
                 </Label>
                 <div className="col-span-3">
                   <Input
-                    id="address"
+                    id="street"
                     value={newUser.address?.street || ""}
                     onChange={(e) =>
                       setNewUser({
@@ -649,8 +643,68 @@ const UserPage = () => {
                         },
                       })
                     }
-                    placeholder="Enter user's address"
+                    className={formErrors.street ? "border-red-500" : ""}
+                    placeholder="Enter street address"
                   />
+                  {formErrors.street && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.street}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="city" className="text-right">
+                  City
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="city"
+                    value={newUser.address?.city || ""}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        address: {
+                          ...newUser.address,
+                          city: e.target.value,
+                        },
+                      })
+                    }
+                    className={formErrors.city ? "border-red-500" : ""}
+                    placeholder="Enter city"
+                  />
+                  {formErrors.city && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.city}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="state" className="text-right">
+                  State
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="state"
+                    value={newUser.address?.state || ""}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        address: {
+                          ...newUser.address,
+                          state: e.target.value,
+                        },
+                      })
+                    }
+                    className={formErrors.state ? "border-red-500" : ""}
+                    placeholder="Enter state"
+                  />
+                  {formErrors.state && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.state}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -688,11 +742,29 @@ const UserPage = () => {
         </Dialog>
       </div>
 
+      {inlineMessage && (
+        <div
+          style={{
+            background: inlineMessageType === "info" ? "#f0f9ff" : "#fef2f2",
+            color: inlineMessageType === "info" ? "#0369a1" : "#b91c1c",
+            border: `1px solid ${
+              inlineMessageType === "info" ? "#bae6fd" : "#fecaca"
+            }`,
+            padding: "16px",
+            borderRadius: "8px",
+            marginBottom: "16px",
+            textAlign: "center",
+          }}
+        >
+          {inlineMessage}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>User List</CardTitle>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
@@ -707,16 +779,6 @@ const UserPage = () => {
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -752,14 +814,6 @@ const UserPage = () => {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer"
-                  onClick={() => handleSort("gardens.length")}
-                >
-                  Status{" "}
-                  {sortField === "gardens.length" &&
-                    (sortDirection === "asc" ? "↑" : "↓")}
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer"
                   onClick={() => handleSort("address")}
                 >
                   Address{" "}
@@ -791,17 +845,6 @@ const UserPage = () => {
                       }`}
                     >
                       {user.role}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        (user.gardens?.length ?? 0) > 0
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {(user.gardens?.length ?? 0) > 0 ? "Active" : "Inactive"}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -919,33 +962,25 @@ const UserPage = () => {
               <Label htmlFor="edit-role" className="text-right">
                 Role
               </Label>
-              <div className="col-span-3">
-                <Select
-                  value={selectedUser?.role || "USER"}
-                  onValueChange={(value) =>
-                    setSelectedUser({
-                      ...selectedUser!,
-                      role: value as User["role"],
-                    })
-                  }
+              <div className="col-span-3 flex items-center h-10">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    selectedUser?.role === "ADMIN"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {selectedUser?.role}
+                </span>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-address" className="text-right">
-                Address
+                Street
               </Label>
               <div className="col-span-3">
                 <Input
-                  id="edit-address"
+                  id="edit-street"
                   value={selectedUser?.address?.street || ""}
                   onChange={(e) =>
                     setSelectedUser({
@@ -956,8 +991,66 @@ const UserPage = () => {
                       },
                     })
                   }
-                  placeholder="Enter user's address"
+                  className={formErrors.street ? "border-red-500" : ""}
+                  placeholder="Enter street address"
                 />
+                {formErrors.street && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.street}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-city" className="text-right">
+                City
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-city"
+                  value={selectedUser?.address?.city || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      address: {
+                        ...selectedUser?.address,
+                        city: e.target.value,
+                      },
+                    })
+                  }
+                  className={formErrors.city ? "border-red-500" : ""}
+                  placeholder="Enter city"
+                />
+                {formErrors.city && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.city}</p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-state" className="text-right">
+                State
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-state"
+                  value={selectedUser?.address?.state || ""}
+                  onChange={(e) =>
+                    setSelectedUser({
+                      ...selectedUser!,
+                      address: {
+                        ...selectedUser?.address,
+                        state: e.target.value,
+                      },
+                    })
+                  }
+                  className={formErrors.state ? "border-red-500" : ""}
+                  placeholder="Enter state"
+                />
+                {formErrors.state && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {formErrors.state}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -986,7 +1079,9 @@ const UserPage = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleEditUser}>Save changes</Button>
+            <Button type="button" onClick={handleEditUser}>
+              Save changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1031,11 +1126,14 @@ const UserPage = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {userDevices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="text-muted-foreground text-center">
-                  <p className="text-lg font-medium">No devices found</p>
-                  <p className="text-sm mt-2">
-                    This user doesn't have any devices or sensors yet.
+              <div className="flex flex-col items-center justify-center py-16 min-h-[200px]">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-700 mb-2">
+                    This user currently has no devices.
+                  </p>
+                  <p className="text-base text-gray-500">
+                    Please add devices to this user for monitoring and
+                    management.
                   </p>
                 </div>
               </div>
@@ -1052,6 +1150,7 @@ const UserPage = () => {
                         <TableHead>Garden</TableHead>
                         <TableHead>Feed</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Threshold</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1074,6 +1173,9 @@ const UserPage = () => {
                                 {device.is_active ? "Active" : "Inactive"}
                               </span>
                             </TableCell>
+                            <TableCell>
+                              {device.threshold.min} - {device.threshold.max}
+                            </TableCell>
                           </TableRow>
                         ))}
                     </TableBody>
@@ -1091,6 +1193,7 @@ const UserPage = () => {
                         <TableHead>Garden</TableHead>
                         <TableHead>Feed</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Threshold</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1113,6 +1216,9 @@ const UserPage = () => {
                                 {device.is_active ? "Active" : "Inactive"}
                               </span>
                             </TableCell>
+                            <TableCell>
+                              {device.threshold.min} - {device.threshold.max}
+                            </TableCell>
                           </TableRow>
                         ))}
                     </TableBody>
@@ -1125,6 +1231,57 @@ const UserPage = () => {
             <Button
               variant="outline"
               onClick={() => setIsViewDevicesDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* No Device Dialog */}
+      <Dialog
+        open={isNoDeviceDialogOpen}
+        onOpenChange={setIsNoDeviceDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notice</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 text-center">
+            <p className="text-lg font-semibold text-green-700 mb-2">
+              This user currently has no devices.
+            </p>
+            <p className="text-base text-gray-500">
+              Please add devices to this user for monitoring and management.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsNoDeviceDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">Success!</DialogTitle>
+            <DialogDescription>
+              User information has been updated successfully.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsSuccessDialogOpen(false);
+                setIsEditDialogOpen(false);
+              }}
             >
               Close
             </Button>
