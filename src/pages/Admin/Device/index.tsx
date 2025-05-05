@@ -14,11 +14,11 @@ interface Device {
   lastUsed: string;
   isOn: boolean;
   registeredAt: string;
-  username: string;
+  username: string | null;
   type: string;
   category: string;
   is_active: boolean;
-  garden_name: string;
+  garden_name: string | null;
   time_on: string | null;
   time_off: string | null;
 }
@@ -351,11 +351,11 @@ const DeviceAdmin = () => {
         lastUsed: device.time_on || new Date().toISOString(),
         isOn: device.is_active,
         registeredAt: device.createdAt || new Date().toISOString(),
-        username: device.user,
+        username: device.user || null,
         type: device.type,
         category: device.category,
         is_active: device.is_active,
-        garden_name: device.location?.garden_name || 'N/A',
+        garden_name: device.location?.garden_name || null,
         time_on: device.time_on,
         time_off: device.time_off
       }));
@@ -528,14 +528,19 @@ const DeviceAdmin = () => {
 
   const handleAddDevice = async () => {
     try {
+      // Validate required fields
+      if (!newDevice.device_id || !newDevice.device_name || !newDevice.type) {
+        throw new Error('Device ID, Name, and Type are required');
+      }
+  
       const payload = {
         device_id: newDevice.device_id,
         device_name: newDevice.device_name,
         type: newDevice.type,
-        user: newDevice.user,
-        location: newDevice.location
+        user: newDevice.user || undefined, // Make user optional
+        location: newDevice.location || undefined // Make location optional
       };
-
+  
       const response = await fetch(`${BASE_URL}/device/createDevice`, {
         method: 'POST',
         headers: {
@@ -543,13 +548,19 @@ const DeviceAdmin = () => {
         },
         body: JSON.stringify(payload)
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to add device');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add device');
       }
-
+  
       const data = await response.json();
-
+  
+      // Check if the response matches the expected format
+      if (data.status !== 201 || data.message !== "Create device successfully") {
+        throw new Error('Unexpected response format');
+      }
+  
       const newDeviceEntry: Device = {
         id: data.data._id,
         device_id: data.data.device_id,
@@ -559,13 +570,13 @@ const DeviceAdmin = () => {
         registeredAt: data.data.createdAt,
         username: data.data.user,
         type: data.data.type,
-        category: data.data.category || '',
+        category: data.data.category || 'sensor', // Default to 'sensor' as shown in example
         is_active: data.data.is_active,
         garden_name: data.data.location?.garden_name || 'N/A',
         time_on: data.data.time_on,
         time_off: data.data.time_off
       };
-
+  
       setDevices([...devices, newDeviceEntry]);
       setIsModalOpen(false);
       setNewDevice({
@@ -575,8 +586,44 @@ const DeviceAdmin = () => {
         user: '',
         location: ''
       });
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add device');
+    }
+  };
+
+
+  const [isFindingGarden, setIsFindingGarden] = useState(false);
+
+  // ... (keep all the existing functions until handleAddDevice)
+
+  const handleFindGarden = async () => {
+    if (!newDevice.user) {
+      setError('Please enter a user email first');
+      return;
+    }
+
+    setIsFindingGarden(true);
+    try {
+      const response = await fetch(`${BASE_URL}/user/getGarden?email=${newDevice.user}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch gardens');
+      }
+      const data = await response.json();
+      setGardens(data.data || []);
+      
+      if (data.data && data.data.length > 0) {
+        // Auto-select the first garden if available
+        setNewDevice({...newDevice, location: data.data[0].name});
+      } else {
+        // No gardens found for this user
+        setNewDevice({...newDevice, location: 'no garden'});
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch gardens');
+      setNewDevice({...newDevice, location: 'no garden'});
+    } finally {
+      setIsFindingGarden(false);
     }
   };
 
@@ -584,40 +631,47 @@ const DeviceAdmin = () => {
     if (!currentDevice) return;
     
     try {
+      // Prepare payload according to the API requirements
+      const payload = {
+        device_id: currentDevice.device_id,
+        user: currentDevice.username || null, // Set to null if no username
+        location: currentDevice.garden_name !== 'N/A' && currentDevice.garden_name !== 'no garden' 
+          ? { garden_name: currentDevice.garden_name }
+          : null
+      };
+  
       const response = await fetch(`${BASE_URL}/device/updateDeviceByUser`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          device_id: currentDevice.device_id,
-          user: currentDevice.username,
-          location: currentDevice.garden_name
-        })
+        body: JSON.stringify(payload)
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to update device');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update device');
       }
-
+  
       const data = await response.json();
       
+      // Update state after successful response
       setDevices(devices.map(device => 
         device.id === currentDevice.id 
           ? { 
               ...device,
-              device_id: data.data.device_id,
-              username: data.data.user,
-              garden_name: data.data.location?.garden_name || currentDevice.garden_name,
-              updatedAt: data.data.updatedAt
+              username: data.data.user || null,
+              garden_name: data.data.location?.garden_name || 'N/A'
             } 
           : device
       ));
       
       setIsEditModalOpen(false);
       setCurrentDevice(null);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update device');
+      console.error('Update error:', err);
     }
   };
 
@@ -837,7 +891,7 @@ const DeviceAdmin = () => {
               <TableRow key={device.id}>
                 <TableCell>{device.device_id}</TableCell>
                 <TableCell>{device.name}</TableCell>
-                <TableCell>{device.garden_name}</TableCell>
+                <TableCell>{device.garden_name || 'N/A'}</TableCell>
                 <TableCell>{device.type}</TableCell>
                 <TableCell>{device.category}</TableCell>
                 <TableCell>{formatDateTime(device.time_on)}</TableCell>
@@ -875,64 +929,107 @@ const DeviceAdmin = () => {
           </tbody>
         </Table>
       </TableWrapper>
-
+                    
       {/* Add New Device Modal */}
-      {isModalOpen && (
+       {isModalOpen && (
         <ModalOverlay>
           <ModalContent>
             <ModalHeader>
               <ModalTitle>Add New Device</ModalTitle>
-              <CloseButton onClick={() => setIsModalOpen(false)}>&times;</CloseButton>
+              <CloseButton onClick={() => {
+                setIsModalOpen(false);
+                setGardens([]);
+                setNewDevice({
+                  device_id: '',
+                  device_name: '',
+                  type: '',
+                  user: '',
+                  location: ''
+                });
+                setError(null);
+              }}>&times;</CloseButton>
             </ModalHeader>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
             <FormGroup>
-              <Label>Device ID</Label>
+              <Label>Device ID *</Label>
               <Input 
                 type="text" 
                 value={newDevice.device_id}
                 onChange={(e) => setNewDevice({...newDevice, device_id: e.target.value})}
-                placeholder="Enter device ID (e.g., dev012)"
+                placeholder="Enter device ID (e.g., dev500)"
                 required
               />
             </FormGroup>
             <FormGroup>
-              <Label>Device Name</Label>
+              <Label>Device Name *</Label>
               <Input 
                 type="text" 
                 value={newDevice.device_name}
                 onChange={(e) => setNewDevice({...newDevice, device_name: e.target.value})}
-                placeholder="Enter device name"
+                placeholder="Enter device name (e.g., Soil moisture Sensor)"
                 required
               />
             </FormGroup>
             <FormGroup>
-              <Label>Type</Label>
+              <Label>Type *</Label>
               <Input 
                 type="text" 
                 value={newDevice.type}
                 onChange={(e) => setNewDevice({...newDevice, type: e.target.value})}
-                placeholder="Enter device type"
+                placeholder="Enter device type (e.g., soil moisture sensor)"
                 required
               />
             </FormGroup>
             <FormGroup>
-              <Label>Username</Label>
-              <Input 
-                type="text" 
-                value={newDevice.user}
-                onChange={(e) => setNewDevice({...newDevice, user: e.target.value})}
-                placeholder="Enter username"
-                required
-              />
+              <Label>Username (Email)</Label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Input 
+                  type="email" 
+                  value={newDevice.user}
+                  onChange={(e) => setNewDevice({...newDevice, user: e.target.value})}
+                  placeholder="Enter user email (e.g., user3)"
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  onClick={handleFindGarden}
+                  disabled={isFindingGarden || !newDevice.user}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'background-color 0.2s',
+                    opacity: isFindingGarden || !newDevice.user ? 0.5 : 1
+                  }}
+                >
+                  {isFindingGarden ? 'Finding...' : 'Find Garden'}
+                </button>
+              </div>
             </FormGroup>
             <FormGroup>
-              <Label>Garden Name (Location)</Label>
-              <Input 
-                type="text" 
-                value={newDevice.location}
-                onChange={(e) => setNewDevice({...newDevice, location: e.target.value})}
-                placeholder="Enter garden name"
-                required
-              />
+              <Label>Location (Garden Name)</Label>
+              {gardens.length > 0 ? (
+                <Select
+                  value={newDevice.location}
+                  onChange={(e) => setNewDevice({...newDevice, location: e.target.value})}
+                >
+                  {gardens.map(garden => (
+                    <option key={garden._id} value={garden.name}>
+                      {garden.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : (
+                <Input 
+                  type="text" 
+                  value={newDevice.location}
+                  onChange={(e) => setNewDevice({...newDevice, location: e.target.value})}
+                  placeholder="Enter garden name (e.g., Garden1_User3)"
+                />
+              )}
             </FormGroup>
             <SubmitButton onClick={handleAddDevice}>
               Add Device
@@ -940,77 +1037,203 @@ const DeviceAdmin = () => {
           </ModalContent>
         </ModalOverlay>
       )}
-
+      
       {/* Edit Device Modal */}
       {isEditModalOpen && currentDevice && (
         <ModalOverlay>
           <ModalContent>
             <ModalHeader>
               <ModalTitle>Edit Device</ModalTitle>
-              <CloseButton onClick={() => setIsEditModalOpen(false)}>&times;</CloseButton>
+              <CloseButton onClick={() => {
+                setIsEditModalOpen(false);
+                setCurrentDevice(null);
+                setError(null);
+              }}>&times;</CloseButton>
             </ModalHeader>
+            
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+            
             <FormGroup>
               <Label>Device ID</Label>
               <Input 
                 type="text" 
                 value={currentDevice.device_id}
-                onChange={(e) => setCurrentDevice({...currentDevice, device_id: e.target.value})}
-                placeholder="Enter device ID"
+                readOnly
               />
             </FormGroup>
-            <FormGroup>
-              <Label>Username</Label>
-              <Input 
-                type="text" 
-                value={currentDevice.username}
-                onChange={async (e) => {
-                  const newUsername = e.target.value;
-                  setCurrentDevice({...currentDevice, username: newUsername});
-                  if (newUsername) {
-                    await fetchGardensByUser(newUsername);
-                  } else {
-                    setGardens([]);
-                  }
-                }}
-                placeholder="Enter username"
-              />
-            </FormGroup>
-            {currentDevice.username && (
-              <FormGroup>
-                <Label>Garden Name</Label>
-                <Select
-                  value={currentDevice.garden_name}
-                  onChange={(e) => setCurrentDevice({...currentDevice, garden_name: e.target.value})}
-                >
-                  <option value="">Select a garden</option>
-                  {gardens.map(garden => (
-                    <option key={garden._id} value={garden.name}>
-                      {garden.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormGroup>
-            )}
+            
             <FormGroup>
               <Label>Device Name</Label>
               <Input 
                 type="text" 
                 value={currentDevice.name}
-                onChange={(e) => setCurrentDevice({...currentDevice, name: e.target.value})}
+                onChange={(e) => setCurrentDevice({
+                  ...currentDevice, 
+                  name: e.target.value
+                })}
                 placeholder="Enter device name"
-                disabled
               />
             </FormGroup>
+            
             <FormGroup>
               <Label>Device Type</Label>
               <Input 
                 type="text" 
                 value={currentDevice.type}
-                onChange={(e) => setCurrentDevice({...currentDevice, type: e.target.value})}
+                onChange={(e) => setCurrentDevice({
+                  ...currentDevice, 
+                  type: e.target.value
+                })}
                 placeholder="Enter device type"
-                disabled
               />
             </FormGroup>
+            
+            <FormGroup>
+              <Label>Username</Label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Input 
+                  type="email" 
+                  value={currentDevice.username || ''}
+                  onChange={(e) => {
+                    const newUsername = e.target.value;
+                    setCurrentDevice({
+                      ...currentDevice, 
+                      username: newUsername || null,
+                      garden_name: null // Reset garden when changing user
+                    });
+                    setGardens([]); // Clear previous gardens
+                  }}
+                  placeholder="Enter user email"
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  onClick={async () => {
+                    if (!currentDevice.username) {
+                      setError('Please enter a user email first');
+                      return;
+                    }
+                    setIsFindingGarden(true);
+                    try {
+                      await fetchGardensByUser(currentDevice.username);
+                    } catch (err) {
+                      setError('Failed to fetch gardens');
+                    } finally {
+                      setIsFindingGarden(false);
+                    }
+                  }}
+                  disabled={isFindingGarden || !currentDevice.username}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    opacity: isFindingGarden || !currentDevice.username ? 0.5 : 1
+                  }}
+                >
+                  {isFindingGarden ? 'Finding...' : 'Find Garden'}
+                </button>
+                {currentDevice.username && (
+                  <button 
+                    onClick={() => {
+                      setCurrentDevice({
+                        ...currentDevice, 
+                        username: null,
+                        garden_name: null
+                      });
+                      setGardens([]);
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontWeight: 500
+                    }}
+                  >
+                    Clear User
+                  </button>
+                )}
+              </div>
+            </FormGroup>
+            
+            <FormGroup>
+            <Label>Garden Name</Label>
+            {currentDevice.username ? (
+              <>
+                {gardens.length > 0 ? (
+                  <Select
+                    value={currentDevice.garden_name || ''}
+                    onChange={(e) => setCurrentDevice({
+                      ...currentDevice, 
+                      garden_name: e.target.value || null
+                    })}
+                  >
+                    <option value="">No Garden</option>
+                    {gardens.map(garden => (
+                      <option key={garden._id} value={garden.name}>
+                        {garden.name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <Input 
+                      type="text" 
+                      value={currentDevice.garden_name || ''}
+                      onChange={(e) => setCurrentDevice({
+                        ...currentDevice, 
+                        garden_name: e.target.value || null
+                      })}
+                      placeholder="No gardens found or enter manually"
+                      style={{ flex: 1 }}
+                    />
+                    <button 
+                      onClick={handleFindGarden}
+                      disabled={isFindingGarden}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        opacity: isFindingGarden ? 0.5 : 1
+                      }}
+                    >
+                      {isFindingGarden ? 'Searching...' : 'Search Again'}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Input 
+                type="text" 
+                value="Please enter user email first"
+                disabled
+              />
+            )}
+          </FormGroup>
+            
+            <FormGroup>
+              <Label>Device Status</Label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ToggleButton 
+                  isOn={currentDevice.isOn} 
+                  onClick={() => setCurrentDevice({
+                    ...currentDevice,
+                    isOn: !currentDevice.isOn
+                  })}
+                />
+                <span>{currentDevice.isOn ? 'Active' : 'Inactive'}</span>
+              </div>
+            </FormGroup>
+            
             <SubmitButton onClick={handleEditDevice}>
               Save Changes
             </SubmitButton>
