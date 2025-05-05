@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
-import socket from "../../../services/socket";
+import { useEffect } from "react";
+import { useAppContext } from "../../../context/AppContext";
+import { useDeviceControl } from "../../../hooks/useDeviceControl";
+import useSocketConnection from "../../../hooks/useSocketConnection";
+import DeviceControls from "../../../components/DeviceControls";
+import SocketStatus from "../../../components/SocketStatus";
 import "./Home.css";
 import { FaLocationDot } from "react-icons/fa6";
 import Map from "../../../components/Map";
@@ -9,45 +13,32 @@ import bg3 from "../../../assets/image 9.png";
 import bg4 from "../../../assets/twemoji_sun-behind-cloud.png";
 
 const Home = () => {
-  const [temp, setTemp] = useState<any>(null);
-  const [light, setLight] = useState<any>(null);
-  const [hudmid, setHumid] = useState<any>(null);
+  // Sử dụng Context API thay cho Redux
+  const { state } = useAppContext();
+  const { isConnected } = useSocketConnection();
+  const deviceControl = useDeviceControl();
+  
+  // Lấy dữ liệu từ state
+  const temperature = state.sensorData.temperature;
+  const humidity = state.sensorData.humidity;
+  const light = state.sensorData.light;
+  const soilMoisture = state.sensorData.soilMoisture;
 
-  console.log(socket);
-
+  // Ghi log khi dữ liệu cảm biến thay đổi
   useEffect(() => {
-    // Ensure socket is connected before listening for events
-    if (!socket.connected) {
-      socket.connect();
+    if (temperature) {
+      console.log('Home - Temperature value:', temperature.value);
     }
-
-    const handleTemp = (data: any) => {
-      console.log("Received temp:", data);
-      setTemp(data);
-    };
-
-    const handleHumidity = (data: any) => {
-      console.log("Received humidity:", data);
-      setHumid(data);
-    };
-
-    const handleLight = (data: any) => {
-      console.log("Received light:", data);
-      setLight(data);
-    };
-
-    // Attach event listeners
-    socket.on("temp", handleTemp);
-    socket.on("humidity", handleHumidity);
-    socket.on("light", handleLight);
-
-    // Cleanup function to remove listeners when component unmounts
-    return () => {
-      socket.off("temp", handleTemp);
-      socket.off("humidity", handleHumidity);
-      socket.off("light", handleLight);
-    };
-  }, []);
+    if (humidity) {
+      console.log('Home - Humidity value:', humidity.value);
+    }
+    if (light) {
+      console.log('Home - Light value:', light.value);
+    }
+    if (soilMoisture) {
+      console.log('Home - Soil moisture value:', soilMoisture.value);
+    }
+  }, [temperature, humidity, light, soilMoisture]);
 
   return (
     <>
@@ -77,7 +68,7 @@ const Home = () => {
               <span className="text-base">Cloudy</span>
             </div>
             <p className="text-3xl font-bold">32°</p>
-            <img src={bg4} />
+            <img src={bg4} alt="Weather icon" />
           </div>
         </div>
       </div>
@@ -96,29 +87,30 @@ const Home = () => {
 
           <div className="flex-col flex w-1/3 gap-y-4">
             <div className="info-3 h-1/3 flex items-center justify-center gap-x-2">
-              <img src={bg1} className="w-10! h-10! object-contain " />
+              <img src={bg1} className="w-10! h-10! object-contain " alt="Temperature icon" />
               <div className="flex flex-col">
-                <p className="text-xl font-bold">Temperature</p>
-                <p className="text-xl font-bold">{temp && temp.value}℃</p>
+                <p className="text-xl font-bold">Nhiệt độ</p>
+                <p className="text-xl font-bold">{temperature ? temperature.value : 'N/A'}℃</p>
               </div>
             </div>
             <div className="info-4 h-1/3 flex items-center justify-center gap-x-2">
-              <img src={bg2} className="w-10! h-10! object-contain" />
+              <img src={bg2} className="w-10! h-10! object-contain" alt="Light icon" />
               <div className="flex flex-col">
-                <p className="text-xl font-bold">Light Level</p>
-                <p className="text-xl font-bold">{light && light.value}%</p>
+                <p className="text-xl font-bold">Ánh sáng</p>
+                <p className="text-xl font-bold">{light ? light.value : 'N/A'} lux</p>
               </div>
             </div>
             <div className="info-5 h-1/3 flex items-center justify-center gap-x-2">
-              <img src={bg3} className="w-10! h-10! object-contain" />
+              <img src={bg3} className="w-10! h-10! object-contain" alt="Humidity icon" />
               <div className="flex flex-col">
-                <p className="text-xl font-bold">Humidity </p>
-                <p className="text-xl font-bold">{hudmid && hudmid.value}%</p>
+                <p className="text-xl font-bold">Độ ẩm</p>
+                <p className="text-xl font-bold">{humidity ? humidity.value : '0.0'}%</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
     </>
   );
 };

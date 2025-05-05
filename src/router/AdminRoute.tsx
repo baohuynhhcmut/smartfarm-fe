@@ -4,6 +4,8 @@ import DashboardAdmin from "@/pages/Admin/Dashboard/AdminDashboard";
 import DeviceAdmin from "@/pages/Admin/Device";
 import UserAdmin from "@/pages/Admin/User";
 import Profile from "../pages/User/Profile";
+import UserPage from "@/pages/Admin/User/UserManagement";
+
 const adminRouter = {
   path: "",
   element: <LayoutAdmin />,
@@ -14,7 +16,7 @@ const adminRouter = {
     },
     {
         path: "users",
-        element: <UserAdmin />,
+        element: <UserPage />,
     },
     {
         path: "devices",

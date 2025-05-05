@@ -24,7 +24,7 @@ interface Device {
 }
 
 const Container = styled.div`
-  width: 970px;
+  width: 100%;
   padding: 2rem;
   display: flex;
   flex-direction: column;

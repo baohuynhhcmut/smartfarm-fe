@@ -3,6 +3,7 @@ import Login from "../pages/Login/Login";
 import userRouter from "./UserRoute";
 import adminRouter from "./AdminRoute";
 import ProtecteRoute from "@/auth/ProtecteRoute";
+import ReduxTestPage from "../pages/ReduxTestPage";
 
 export const router = createBrowserRouter([
   {
@@ -19,5 +20,9 @@ export const router = createBrowserRouter([
       element: <ProtecteRoute />, 
       children: [userRouter]
   },
+  {
+    path: '/redux-test',
+    element: <ReduxTestPage />
+  }
 ]);
 
