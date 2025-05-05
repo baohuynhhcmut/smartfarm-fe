@@ -24,9 +24,9 @@ interface Device {
 }
 
 const Container = styled.div`
-  width: 970px;
-  padding: 2rem;
-  display: flex;
+  width: 100%;
+  padding: 1.5rem;
+  display: grid;
   flex-direction: column;
   gap: 1.5rem;
 `;
@@ -39,9 +39,10 @@ const Header = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 1.5rem;
+  font-size: 1.875rem;
   font-weight: bold;
-  color: #2d3748;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
 `;
 
 const AddButton = styled.button`
@@ -49,55 +50,55 @@ const AddButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: #4299e1;
+  background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 0.25rem;
+  border-radius: 0.375rem;
   cursor: pointer;
+  font-weight: 500;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #3182ce;
+    background-color: #2563eb;
   }
 `;
 
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 0.5rem;
-  overflow: hidden;
 `;
 
 const TableHeader = styled.th`
   padding: 1rem;
   text-align: left;
-  background-color: #edf2f7;
-  color: #4a5568;
+  background-color: #f1f5f9;
+  color: #334155;
   font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
 `;
 
 const TableRow = styled.tr`
-  &:nth-child(even) {
-    background-color: #f7fafc;
-  }
   &:hover {
-    background-color: #ebf8ff;
+    background-color: #f8fafc;
   }
 `;
 
 const TableCell = styled.td`
   padding: 1rem;
   border-bottom: 1px solid #e2e8f0;
+  color: #475569;
 `;
 
 const ToggleButton = styled.button<ToggleButtonProps>`
-  background-color: ${({ isOn }) => (isOn ? '#48bb78' : '#e53e3e')};
+  background-color: ${({ isOn }) => (isOn ? '#10b981' : '#ef4444')};
   border: none;
   border-radius: 1rem;
   width: 3rem;
@@ -121,23 +122,33 @@ const ToggleButton = styled.button<ToggleButtonProps>`
 
 const ActionButton = styled.button`
   background-color: transparent;
-  border: none;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 0.25rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 
   &:hover {
-    background-color: #fff5f5;
+    background-color: #f1f5f9;
   }
 `;
 
 const DeleteButton = styled(ActionButton)`
-  color: #e53e3e;
+  color: #ef4444;
+  border-color: #fecaca;
+
+  &:hover {
+    background-color: #fee2e2;
+  }
 `;
 
 const EditButton = styled(ActionButton)`
-  color: #4299e1;
+  color: #3b82f6;
+  border-color: #bfdbfe;
+
+  &:hover {
+    background-color: #dbeafe;
+  }
 `;
 
 const ModalOverlay = styled.div`
@@ -155,7 +166,7 @@ const ModalOverlay = styled.div`
 
 const ModalContent = styled.div`
   background-color: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 0.5rem;
   width: 90%;
   max-width: 500px;
@@ -174,7 +185,13 @@ const ModalHeader = styled.div`
 const ModalTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: bold;
-  color: #2d3748;
+  color: #1e293b;
+`;
+
+const ModalDescription = styled.p`
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
 `;
 
 const CloseButton = styled.button`
@@ -182,7 +199,7 @@ const CloseButton = styled.button`
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #718096;
+  color: #64748b;
 `;
 
 const FormGroup = styled.div`
@@ -192,21 +209,23 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5rem;
-  color: #4a5568;
+  color: #334155;
   font-weight: 500;
+  font-size: 0.875rem;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #334155;
 
   &:focus {
     outline: none;
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 `;
 
@@ -214,37 +233,68 @@ const Select = styled.select`
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #334155;
 
   &:focus {
     outline: none;
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 `;
 
 const SubmitButton = styled.button`
   width: 100%;
   padding: 0.75rem;
-  background-color: #4299e1;
+  background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
   margin-top: 1rem;
 
   &:hover {
-    background-color: #3182ce;
+    background-color: #2563eb;
   }
 `;
 
 const FilterButton = styled(AddButton)`
   background-color: ${({ isActive }: { isActive: boolean }) => 
-    isActive ? '#3182ce' : '#4299e1'};
+    isActive ? '#2563eb' : '#3b82f6'};
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+`;
+
+const LoadingSpinner = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+
+  &:after {
+    content: '';
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #3b82f6;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 `;
 
 const BASE_URL = 'http://localhost:8081/api/v1';
@@ -266,7 +316,17 @@ const DeviceAdmin = () => {
     location: ''
   });
 
-  const [filters, setFilters] = useState({
+  // Separate pending and applied filters
+  const [appliedFilters, setAppliedFilters] = useState({
+    id: '',
+    category: '',
+    username: '',
+    gardenName: '',
+    type: '',
+    isActive: ''
+  });
+
+  const [pendingFilters, setPendingFilters] = useState({
     id: '',
     category: '',
     username: '',
@@ -326,23 +386,23 @@ const DeviceAdmin = () => {
       let url = `${BASE_URL}/device/getAllDevice`;
       let filterApplied = false;
 
-      if (filters.id) {
-        url = `${BASE_URL}/device/getDeviceById?device_id=${filters.id}`;
+      if (appliedFilters.id) {
+        url = `${BASE_URL}/device/getDeviceById?device_id=${appliedFilters.id}`;
         filterApplied = true;
-      } else if (filters.category) {
-        url = `${BASE_URL}/device/getDeviceByCategory?category=${filters.category}`;
+      } else if (appliedFilters.category) {
+        url = `${BASE_URL}/device/getDeviceByCategory?category=${appliedFilters.category}`;
         filterApplied = true;
-      } else if (filters.username) {
-        url = `${BASE_URL}/device/getDeviceByUser?email=${filters.username}`;
+      } else if (appliedFilters.username) {
+        url = `${BASE_URL}/device/getDeviceByUser?email=${appliedFilters.username}`;
         filterApplied = true;
-      } else if (filters.gardenName) {
-        url = `${BASE_URL}/device/getDeviceByGardenName?garden_name=${filters.gardenName}`;
+      } else if (appliedFilters.gardenName) {
+        url = `${BASE_URL}/device/getDeviceByGardenName?garden_name=${appliedFilters.gardenName}`;
         filterApplied = true;
-      } else if (filters.type) {
-        url = `${BASE_URL}/device/getDeviceByType?type=${filters.type}`;
+      } else if (appliedFilters.type) {
+        url = `${BASE_URL}/device/getDeviceByType?type=${appliedFilters.type}`;
         filterApplied = true;
-      } else if (filters.isActive) {
-        url = `${BASE_URL}/device/getDeviceByIsActive?is_active=${filters.isActive}`;
+      } else if (appliedFilters.isActive) {
+        url = `${BASE_URL}/device/getDeviceByIsActive?is_active=${appliedFilters.isActive}`;
         filterApplied = true;
       }
 
@@ -382,12 +442,12 @@ const DeviceAdmin = () => {
   };
 
   useEffect(() => {
-    if (Object.values(filters).some(filter => filter !== '')) {
+    if (Object.values(appliedFilters).some(filter => filter !== '')) {
       fetchFilteredDevices();
     } else {
       fetchDevices();
     }
-  }, [filters]);
+  }, [appliedFilters]);
 
   const toggleDevice = async (id: string) => {
     try {
@@ -454,7 +514,6 @@ const DeviceAdmin = () => {
       const responseData = await response.json();
       
       if (responseData.status === 200 && responseData.message === "Device deleted successfully") {
-        // Update the UI by removing the deleted device from the state
         setDevices(devices.filter(device => device.id !== id));
         return true;
       } else {
@@ -466,7 +525,6 @@ const DeviceAdmin = () => {
       return false;
     }
   };
-  
 
   const handleAddDevice = async () => {
     try {
@@ -572,12 +630,12 @@ const DeviceAdmin = () => {
   };
 
   const applyFilters = () => {
-    fetchFilteredDevices();
+    setAppliedFilters(pendingFilters);
     setIsFilterOpen(false);
   };
 
   const clearFilters = () => {
-    setFilters({
+    setPendingFilters({
       id: '',
       category: '',
       username: '',
@@ -585,7 +643,14 @@ const DeviceAdmin = () => {
       type: '',
       isActive: ''
     });
-    fetchDevices();
+    setAppliedFilters({
+      id: '',
+      category: '',
+      username: '',
+      gardenName: '',
+      type: '',
+      isActive: ''
+    });
     setIsFilterOpen(false);
   };
 
@@ -601,14 +666,6 @@ const DeviceAdmin = () => {
     };
     return new Date(dateTime).toLocaleDateString('en-US', options);
   };
-
-  if (loading) {
-    return <Container>Loading devices...</Container>;
-  }
-
-  if (error) {
-    return <Container>Error: {error}</Container>;
-  }
 
   const updateDeviceTimer = async (deviceId: string, timeOn: string | null, timeOff: string | null) => {
     try {
@@ -647,6 +704,14 @@ const DeviceAdmin = () => {
     }
   };
 
+  if (loading) {
+    return <Container>Loading devices...</Container>;
+  }
+
+  if (error) {
+    return <Container>Error: {error}</Container>;
+  }
+
   return (
     <Container>
       <Header>
@@ -683,8 +748,8 @@ const DeviceAdmin = () => {
               <Label>Device ID</Label>
               <Input 
                 type="text" 
-                value={filters.id}
-                onChange={(e) => setFilters({...filters, id: e.target.value})}
+                value={pendingFilters.id}
+                onChange={(e) => setPendingFilters({...pendingFilters, id: e.target.value})}
                 placeholder="Filter by ID"
               />
             </FormGroup>
@@ -692,8 +757,8 @@ const DeviceAdmin = () => {
               <Label>Category</Label>
               <Input 
                 type="text" 
-                value={filters.category}
-                onChange={(e) => setFilters({...filters, category: e.target.value})}
+                value={pendingFilters.category}
+                onChange={(e) => setPendingFilters({...pendingFilters, category: e.target.value})}
                 placeholder="Filter by category"
               />
             </FormGroup>
@@ -701,8 +766,8 @@ const DeviceAdmin = () => {
               <Label>Username</Label>
               <Input 
                 type="text" 
-                value={filters.username}
-                onChange={(e) => setFilters({...filters, username: e.target.value})}
+                value={pendingFilters.username}
+                onChange={(e) => setPendingFilters({...pendingFilters, username: e.target.value})}
                 placeholder="Filter by username"
               />
             </FormGroup>
@@ -710,8 +775,8 @@ const DeviceAdmin = () => {
               <Label>Garden Name</Label>
               <Input 
                 type="text" 
-                value={filters.gardenName}
-                onChange={(e) => setFilters({...filters, gardenName: e.target.value})}
+                value={pendingFilters.gardenName}
+                onChange={(e) => setPendingFilters({...pendingFilters, gardenName: e.target.value})}
                 placeholder="Filter by garden"
               />
             </FormGroup>
@@ -719,16 +784,16 @@ const DeviceAdmin = () => {
               <Label>Type</Label>
               <Input 
                 type="text" 
-                value={filters.type}
-                onChange={(e) => setFilters({...filters, type: e.target.value})}
+                value={pendingFilters.type}
+                onChange={(e) => setPendingFilters({...pendingFilters, type: e.target.value})}
                 placeholder="Filter by type"
               />
             </FormGroup>
             <FormGroup>
               <Label>Status</Label>
               <Select
-                value={filters.isActive}
-                onChange={(e) => setFilters({...filters, isActive: e.target.value})}
+                value={pendingFilters.isActive}
+                onChange={(e) => setPendingFilters({...pendingFilters, isActive: e.target.value})}
               >
                 <option value="">All</option>
                 <option value="true">Active</option>

@@ -1,16 +1,51 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState("User Name");
+  const BASE_URL = 'http://localhost:8081/api/v1';
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(`${BASE_URL}/user/getByToken`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const data = await response.json();
+        setUserRole(data.user.role);
+        setUserName(data.user.name);
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+
+    fetchUserRole();
+  }, []);
 
   const handleBellClick = () => {
     navigate("/message");
   };
 
   const handleUserClick = () => {
-    navigate("/profile");
+    if (userRole === 'ADMIN') {
+      navigate("/admin/profile");
+    } else {
+      navigate("/user/profile");
+    }
   };
 
   return (
@@ -27,8 +62,8 @@ const Header: React.FC = () => {
             style={styles.avatar}
           />
           <div style={styles.userInfo}>
-            <span style={styles.username}>User Name</span>
-            <span style={styles.userLabel}>User</span>
+            <span style={styles.username}>{userName}</span>
+            <span style={styles.userLabel}>{userRole || 'User'}</span>
           </div>
         </div>
       </div>
