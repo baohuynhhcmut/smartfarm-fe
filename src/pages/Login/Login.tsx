@@ -17,6 +17,9 @@ const Login = () => {
     confirmPassword: ""
   });
   const [error, setError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const navigate = useNavigate();
 
   const BASE_URL = "http://localhost:8081/api/v1";
@@ -34,7 +37,6 @@ const Login = () => {
     setError("");
     
     try {
-      // Login API call
       const response = await fetch(`${BASE_URL}/user/login`, {
         method: "POST",
         headers: {
@@ -46,13 +48,11 @@ const Login = () => {
         })
       });
   
-      // Check response status first
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || "Đăng nhập thất bại: " + response.status);
       }
   
-      // Then check content-type
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
@@ -61,16 +61,13 @@ const Login = () => {
   
       const data = await response.json();
   
-      // Check token exists
       if (!data.token) {
         throw new Error("Không nhận được token xác thực");
       }
   
-      // Save token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
   
-      // Simplified role handling - based on user role in response
       if (data.user.role === "ADMIN") {
         navigate("/admin");
       } else if (data.user.role === "USER") {
@@ -89,7 +86,6 @@ const Login = () => {
     e.preventDefault();
     setError("");
   
-    // Kiểm tra password match
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -114,7 +110,6 @@ const Login = () => {
         })
       });
   
-      // Kiểm tra content-type trước khi parse JSON
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
@@ -127,7 +122,6 @@ const Login = () => {
         throw new Error(data.message || "Registration failed");
       }
   
-      // Nếu đăng ký thành công, chuyển sang form login
       setIsLogin(true);
       setError("");
       alert("Registration successful! Please log in.");
@@ -135,6 +129,43 @@ const Login = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during registration");
       console.error("Registration error:", err);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const response = await fetch(`${BASE_URL}/user/forgetPassword`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: forgotPasswordEmail
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Forgot password request failed");
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 200) {
+        setForgotPasswordSuccess(true);
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setForgotPasswordSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(data.message || "Failed to process forgot password request");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during password reset");
+      console.error("Forgot password error:", err);
     }
   };
 
@@ -194,7 +225,15 @@ const Login = () => {
                   />
                   Remember me
                 </label>
-                <a href="#" className="text-sm text-pink-500">
+                <a 
+                  href="#" 
+                  className="text-sm text-pink-500"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowForgotPassword(true);
+                    setError("");
+                  }}
+                >
                   Forgot Password?
                 </a>
               </div>
@@ -357,6 +396,55 @@ const Login = () => {
           </>
         )}
       </div>
+
+      {/* Forgot Password Modal với hiệu ứng blur */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
+            {forgotPasswordSuccess ? (
+              <div className="text-green-500 mb-4">
+                Password reset email sent successfully! Please check your email.
+              </div>
+            ) : (
+              <>
+                {error && <div className="text-red-500 mb-4">{error}</div>}
+                <form onSubmit={handleForgotPassword}>
+                  <div className="mb-4">
+                    <label className="block text-gray-700">Email</label>
+                    <input
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      type="email"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setError("");
+                      }}
+                      className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600"
+                    >
+                      Send Reset Link
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
