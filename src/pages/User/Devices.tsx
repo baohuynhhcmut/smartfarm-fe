@@ -1,6 +1,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import socket from '@/services/socket';
+import axios from 'axios';
+
+interface Garden {
+  _id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface User {
+  _id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone_number: string;
+  gardens: Garden[];
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  };
+}
 
 interface Device {
   id: string;
@@ -206,7 +231,7 @@ const Spinner = styled.div`
 `;
 
 // Toast notification component
-const Toast = styled.div<{ visible: boolean }>`
+const ToastContainer = styled.div`
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -215,8 +240,6 @@ const Toast = styled.div<{ visible: boolean }>`
   padding: 1rem;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  opacity: ${({ visible }) => (visible ? 1 : 0)};
-  transform: translateY(${({ visible }) => (visible ? 0 : '20px')});
   transition: opacity 0.3s, transform 0.3s;
   z-index: 1000;
   display: flex;
@@ -231,6 +254,17 @@ const Toast = styled.div<{ visible: boolean }>`
     font-weight: bold;
   }
 `;
+
+// Toast component that handles visibility
+const Toast = ({ visible, children }: { visible: boolean; children: React.ReactNode }) => {
+  if (!visible) return null;
+  
+  return (
+    <ToastContainer>
+      {children}
+    </ToastContainer>
+  );
+};
 
 // Buttons for timer control
 const TimeControlButton = styled.button`
@@ -358,56 +392,29 @@ const ConfirmationPopup = ({ isOpen, onClose, onConfirm, message }: Confirmation
 
 // Component
 const Devices = () => {
-  const locations = [
-    "Trường Đại học Bách Khoa, ĐHQGHCM",
-    "Trường Đại học Quốc tế, ĐHQGHCM",
-    "Bcons Suối Tiên",
-    "Bcons Miền Đông",
-  ];
-
+  // User and garden state
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedGarden, setSelectedGarden] = useState<string>('');
+  const [userGardens, setUserGardens] = useState<Garden[]>([]);
+  
   // State for toast
   const [toast, setToast] = useState({
     visible: false,
     message: ''
   });
 
-  // Devices state - moved here before useEffect
-  const [devices, setDevices] = useState<Device[]>([
-    { 
-      id: 'V10',
-      name: 'Máy bơm', 
-      lastUsed: 'Vừa xong', 
-      status: 'Tắt', 
-      timer: 'Chưa đặt', 
-      brand: 'Xiaomi', 
-      type: 'Watering', 
-      isOn: false, 
-      timerSet: false, 
-      turnOffTime: null, 
-      automatic: false,
-      isLoading: false,
-      showTimerInput: true,
-      upperThreshold: 33, // Nếu nhiệt độ > 33 thì bật máy bơm
-      lowerThreshold: 33  // Nếu nhiệt độ <= 33 thì tắt máy bơm (chỉ dùng ngưỡng trên)
-    },
-    { 
-      id: 'V11',
-      name: 'Đèn LED', 
-      lastUsed: 'Vừa xong', 
-      status: 'Tắt', 
-      timer: 'Chưa đặt', 
-      brand: 'Phillips', 
-      type: 'Led', 
-      isOn: false, 
-      timerSet: false, 
-      turnOffTime: null, 
-      automatic: false,
-      isLoading: false,
-      showTimerInput: true,
-      upperThreshold: 2000, // Nếu ánh sáng >= 2000 thì tắt đèn
-      lowerThreshold: 2000  // Nếu ánh sáng < 2000 thì bật đèn (chỉ dùng ngưỡng trên)
-    },
-  ]);
+  // Devices state
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  
+  // State for confirmation popup
+  const [confirmPopup, setConfirmPopup] = useState({
+    isOpen: false,
+    message: '',
+    deviceIndex: -1
+  });
 
   // Function to show toast
   const showToast = (message: string) => {
@@ -417,6 +424,129 @@ const Devices = () => {
       setToast({ visible: false, message: '' });
     }, 3000);
   };
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No token found');
+        }
+        
+        const response = await axios.get('http://localhost:8081/api/v1/user/getByToken', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        setUser(response.data.user);
+        if (response.data.user.gardens) {
+          setUserGardens(response.data.user.gardens);
+        }
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching user data:', err);
+        setError(err.message || 'Failed to fetch user data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // Fetch devices when garden is selected
+  useEffect(() => {
+    const fetchDevices = async () => {
+      if (!selectedGarden) return;
+      
+      setLoadingDevices(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No token found');
+        }
+        
+        console.log(`Fetching devices for garden: ${selectedGarden}`);
+        const response = await axios.get(`http://localhost:8081/api/v1/device/getDeviceByGardenName`, {
+          params: {
+            garden_name: selectedGarden
+          },
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        console.log('Device API response:', response.data);
+        
+        // Map API devices to our component's device format
+        if (response.data && response.data.data) {
+          const apiDevices = response.data.data;
+          
+          // Filter for pump and LED devices
+          const pumpDevice = apiDevices.find((d: any) => d.feed === 'V10');
+          const ledDevice = apiDevices.find((d: any) => d.feed === 'V11');
+          
+          const formattedDevices: Device[] = [];
+          
+          if (pumpDevice) {
+            formattedDevices.push({
+              id: 'V10',
+              name: 'Máy bơm',
+              lastUsed: 'Vừa xong',
+              status: pumpDevice.status === 'on' ? 'Bật' : 'Tắt',
+              timer: 'Chưa đặt',
+              brand: 'Xiaomi',
+              type: 'Watering',
+              isOn: pumpDevice.status === 'on',
+              timerSet: false,
+              turnOffTime: null,
+              automatic: pumpDevice.mode === 'automatic',
+              isLoading: false,
+              showTimerInput: true,
+              upperThreshold: 33,
+              lowerThreshold: 33
+            });
+          }
+          
+          if (ledDevice) {
+            formattedDevices.push({
+              id: 'V11',
+              name: 'Đèn LED',
+              lastUsed: 'Vừa xong',
+              status: ledDevice.status === 'on' ? 'Bật' : 'Tắt',
+              timer: 'Chưa đặt',
+              brand: 'Phillips',
+              type: 'Led',
+              isOn: ledDevice.status === 'on',
+              timerSet: false,
+              turnOffTime: null,
+              automatic: ledDevice.mode === 'automatic',
+              isLoading: false,
+              showTimerInput: true,
+              upperThreshold: 2000,
+              lowerThreshold: 2000
+            });
+          }
+          
+          setDevices(formattedDevices);
+        } else {
+          console.log('No devices data in response');
+          setDevices([]);
+        }
+      } catch (err: any) {
+        console.error('Error fetching devices:', err);
+        setDevices([]);
+        showToast('Không thể tải thiết bị. Vui lòng thử lại sau.');
+      } finally {
+        setLoadingDevices(false);
+      }
+    };
+
+    fetchDevices();
+  }, [selectedGarden]);
 
   // Helper to format date to Vietnamese format
   const formatDateToVN = (date: Date): string => {
@@ -435,6 +565,11 @@ const Devices = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() + 1);
     return formatDateToVN(now);
+  };
+
+  // Handle garden selection change
+  const handleGardenChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedGarden(e.target.value);
   };
 
   // Move handlers outside the useEffect to prevent dependency issues
@@ -790,13 +925,6 @@ const Devices = () => {
     setDevices(updatedDevices);
   };
 
-  // State for confirmation popup
-  const [confirmPopup, setConfirmPopup] = useState({
-    isOpen: false,
-    message: '',
-    deviceIndex: -1
-  });
-  
   // Function to open confirmation popup
   const openConfirmationPopup = (index: number) => {
     setConfirmPopup({
@@ -863,144 +991,212 @@ const Devices = () => {
 
   return (
     <Container>
-      <DropdownContainer>
-        <SelectContainer>
-          <Select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}>
-            <option value="">Chọn khu vườn</option>
-            {locations.map((location, index) => (
-              <option key={index} value={location}>
-                {location}
-              </option>
-            ))}
-          </Select>
-          <SelectIcon>
-            <svg
-              className="fill-current h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-            >
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-            </svg>
-          </SelectIcon>
-        </SelectContainer>
-      </DropdownContainer>
-      <div>
-        <Title>DANH SÁCH THIẾT BỊ</Title>
-        <Description>
-          Nhấn vào nút bật/tắt để điều khiển thiết bị
-        </Description>
-      </div>
-      <Table>
-        <thead>
-          <TableRow>
-            <TableHeader>Thiết bị</TableHeader>
-            <TableHeader>Thời gian sử dụng cuối</TableHeader>
-            <TableHeader>Trạng thái</TableHeader>
-            <TableHeader>Ngưỡng trên</TableHeader>
-            <TableHeader>Ngưỡng dưới</TableHeader>
-            <TableHeader>Hẹn giờ</TableHeader>
-            <TableHeader>Thời gian tắt</TableHeader>
-            <TableHeader>Bật/Tắt</TableHeader>
-            <TableHeader>Tự động</TableHeader>
-          </TableRow>
-        </thead>
-        <tbody>
-          {devices.map((device, index) => (
-            <TableRow key={index}>
-              <TableCell>{device.name}</TableCell>
-              <TableCell>{device.lastUsed}</TableCell>
-              <TableCell>{device.status}</TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  value={device.upperThreshold}
-                  onChange={(e) => handleThresholdChange(index, 'upper', e.target.value)}
-                  style={{ width: '70px' }}
-                />
-                {device.id === 'V10' ? '°C' : 'lux'}
-              </TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  value={device.lowerThreshold}
-                  onChange={(e) => handleThresholdChange(index, 'lower', e.target.value)}
-                  style={{ width: '70px' }}
-                />
-                {device.id === 'V10' ? '°C' : 'lux'}
-              </TableCell>
-              <TableCell>
-                <TimerButton
-                  isSet={device.timerSet}
-                  onClick={() => handleTimer(index)}
-                  disabled={device.automatic || !device.isOn || device.isLoading}
+      {loading ? (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          padding: '2rem',
+          height: '200px'
+        }}>
+          <Spinner />
+          <span style={{ marginLeft: '0.5rem' }}>Đang tải dữ liệu người dùng...</span>
+        </div>
+      ) : error ? (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '2rem', 
+          color: '#e53e3e', 
+          backgroundColor: '#fff5f5', 
+          borderRadius: '0.5rem',
+          marginTop: '1rem'
+        }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Lỗi</h2>
+          <p>{error}</p>
+        </div>
+      ) : (
+        <>
+          <DropdownContainer>
+            <SelectContainer>
+              <Select value={selectedGarden} onChange={handleGardenChange}>
+                <option value="">Chọn khu vườn</option>
+                {userGardens.map((garden) => (
+                  <option key={garden._id} value={garden.name}>
+                    {garden.name}
+                  </option>
+                ))}
+              </Select>
+              <SelectIcon>
+                <svg
+                  className="fill-current h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
                 >
-                  {device.timer}
-                </TimerButton>
-              </TableCell>
-              <TableCell>
-                {device.timerSet && device.isOn && (
-                  <>
-                    {device.showTimerInput ? (
-                      <>
-                        <Input
-                          type="datetime-local"
-                          value={device.turnOffTime || getDefaultTimerValue()}
-                          onChange={(e) => handleTurnOffTimeChange(index, e.target.value)}
-                          disabled={device.automatic || device.isLoading}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          {device.turnOffTime ? new Date(device.turnOffTime).toLocaleString('vi-VN') : 'Chọn thời gian'}
-                        </div>
-                        <ButtonsContainer>
-                          <EditButton 
-                            onClick={() => toggleTimerInput(index)}
-                            disabled={device.isLoading}
-                          >
-                            Chỉnh sửa
-                          </EditButton>
-                          <PauseButton 
-                            onClick={() => openConfirmationPopup(index)}
-                            disabled={device.isLoading}
-                          >
-                            Tạm ngừng
-                          </PauseButton>
-                        </ButtonsContainer>
-                      </>
-                    )}
-                  </>
-                )}
-              </TableCell>
-              <TableCell>
-                <div style={{ position: 'relative' }}>
-                  {device.isLoading && (
-                    <LoadingOverlay>
-                      <Spinner />
-                      <span>Đang xử lý...</span>
-                    </LoadingOverlay>
-                  )}
-                  <ToggleButton
-                    isOn={device.isOn}
-                    onClick={() => toggleDevice(index)}
-                    disabled={device.automatic || device.isLoading}
-                  />
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                </svg>
+              </SelectIcon>
+            </SelectContainer>
+          </DropdownContainer>
+          
+          {!selectedGarden ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '2rem', 
+              color: '#4a5568', 
+              backgroundColor: '#f7fafc', 
+              borderRadius: '0.5rem',
+              marginTop: '1rem'
+            }}>
+              <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Vui lòng chọn 1 vườn để xem chi tiết</h2>
+              <p>Chọn một khu vườn từ danh sách để xem và quản lý thiết bị</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <Title>DANH SÁCH THIẾT BỊ</Title>
+                <Description>
+                  Nhấn vào nút bật/tắt để điều khiển thiết bị
+                </Description>
+              </div>
+              
+              {loadingDevices ? (
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  padding: '2rem' 
+                }}>
+                  <Spinner />
+                  <span style={{ marginLeft: '0.5rem' }}>Đang tải thiết bị...</span>
                 </div>
-              </TableCell>
-              <TableCell>
-                <div style={{ position: 'relative' }}>
-                  <ToggleButton
-                    isOn={device.automatic}
-                    onClick={() => toggleAutomatic(index)}
-                    disabled={device.isLoading}
-                  />
+              ) : devices.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '2rem', 
+                  color: '#4a5568', 
+                  backgroundColor: '#f7fafc', 
+                  borderRadius: '0.5rem'
+                }}>
+                  <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Không tìm thấy thiết bị</h2>
+                  <p>Không có thiết bị nào được tìm thấy trong khu vườn này</p>
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </tbody>
-      </Table>
+              ) : (
+                <Table>
+                  <thead>
+                    <TableRow>
+                      <TableHeader>Thiết bị</TableHeader>
+                      <TableHeader>Thời gian sử dụng cuối</TableHeader>
+                      <TableHeader>Trạng thái</TableHeader>
+                      <TableHeader>Ngưỡng trên</TableHeader>
+                      <TableHeader>Ngưỡng dưới</TableHeader>
+                      <TableHeader>Hẹn giờ</TableHeader>
+                      <TableHeader>Thời gian tắt</TableHeader>
+                      <TableHeader>Bật/Tắt</TableHeader>
+                      <TableHeader>Tự động</TableHeader>
+                    </TableRow>
+                  </thead>
+                  <tbody>
+                    {devices.map((device, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{device.name}</TableCell>
+                        <TableCell>{device.lastUsed}</TableCell>
+                        <TableCell>{device.status}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={device.upperThreshold}
+                            onChange={(e) => handleThresholdChange(index, 'upper', e.target.value)}
+                            style={{ width: '70px' }}
+                          />
+                          {device.id === 'V10' ? '°C' : 'lux'}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={device.lowerThreshold}
+                            onChange={(e) => handleThresholdChange(index, 'lower', e.target.value)}
+                            style={{ width: '70px' }}
+                          />
+                          {device.id === 'V10' ? '°C' : 'lux'}
+                        </TableCell>
+                        <TableCell>
+                          <TimerButton
+                            isSet={device.timerSet}
+                            onClick={() => handleTimer(index)}
+                            disabled={device.automatic || !device.isOn || device.isLoading}
+                          >
+                            {device.timer}
+                          </TimerButton>
+                        </TableCell>
+                        <TableCell>
+                          {device.timerSet && device.isOn && (
+                            <>
+                              {device.showTimerInput ? (
+                                <>
+                                  <Input
+                                    type="datetime-local"
+                                    value={device.turnOffTime || getDefaultTimerValue()}
+                                    onChange={(e) => handleTurnOffTimeChange(index, e.target.value)}
+                                    disabled={device.automatic || device.isLoading}
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <div>
+                                    {device.turnOffTime ? new Date(device.turnOffTime).toLocaleString('vi-VN') : 'Chọn thời gian'}
+                                  </div>
+                                  <ButtonsContainer>
+                                    <EditButton 
+                                      onClick={() => toggleTimerInput(index)}
+                                      disabled={device.isLoading}
+                                    >
+                                      Chỉnh sửa
+                                    </EditButton>
+                                    <PauseButton 
+                                      onClick={() => openConfirmationPopup(index)}
+                                      disabled={device.isLoading}
+                                    >
+                                      Tạm ngừng
+                                    </PauseButton>
+                                  </ButtonsContainer>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div style={{ position: 'relative' }}>
+                            {device.isLoading && (
+                              <LoadingOverlay>
+                                <Spinner />
+                                <span>Đang xử lý...</span>
+                              </LoadingOverlay>
+                            )}
+                            <ToggleButton
+                              isOn={device.isOn}
+                              onClick={() => toggleDevice(index)}
+                              disabled={device.automatic || device.isLoading}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div style={{ position: 'relative' }}>
+                            <ToggleButton
+                              isOn={device.automatic}
+                              onClick={() => toggleAutomatic(index)}
+                              disabled={device.isLoading}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </>
+          )}
+        </>
+      )}
       
       <Toast visible={toast.visible}>
         {toast.message}

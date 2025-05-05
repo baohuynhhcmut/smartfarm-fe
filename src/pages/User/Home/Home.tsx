@@ -362,6 +362,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+
       <div className="mt-[50px]! flex flex-col">
         <h2 className="text-[#374151] font-semibold flex text-2xl items-center mb-4">
           <span className="text-pink-500">
@@ -373,20 +374,21 @@ const Home = () => {
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-2/3 h-[300px] bg-blue-500 rounded-xl relative">
             {isLoadingDevices && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
+              <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
                 <div className="loader"></div>
                 <p className="ml-2 font-semibold">Đang tải thiết bị...</p>
               </div>
             )}
             <Map gardens={gardens} onGardenSelect={handleGardenSelect} selectedGarden={selectedGarden} />
+
           </div>
 
           <div className="flex flex-col lg:w-1/3 gap-4">
-            <div className="info-3 flex items-center justify-center gap-x-2 relative p-3">
+            <div className="info-3 flex items-center justify-center gap-x-2 p-3">
               {selectedGarden && !sensorReadings.temperature && loadingDeviceIds.some(id => 
                 devices.find(d => d.device_id === id && d.type.includes('temperature'))
               ) ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
+                <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-xl ">
                   <div className="loader"></div>
                   <p className="ml-2 text-sm">Đang kết nối...</p>
                 </div>
@@ -405,11 +407,12 @@ const Home = () => {
                 )}
               </div>
             </div>
-            <div className="info-4 flex items-center justify-center gap-x-2 relative p-3">
+            
+            <div className="info-4 flex items-center justify-center gap-x-2  p-3">
               {selectedGarden && !sensorReadings.light && loadingDeviceIds.some(id => 
                 devices.find(d => d.device_id === id && d.type.includes('light'))
               ) ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
+                <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
                   <div className="loader"></div>
                   <p className="ml-2 text-sm">Đang kết nối...</p>
                 </div>
@@ -428,11 +431,12 @@ const Home = () => {
                 )}
               </div>
             </div>
-            <div className="info-5 flex items-center justify-center gap-x-2 relative p-3">
+            
+            <div className="info-5 flex items-center justify-center gap-x-2  p-3">
               {selectedGarden && !sensorReadings.humidity && loadingDeviceIds.some(id => 
                 devices.find(d => d.device_id === id && d.type.includes('humidity'))
               ) ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
+                <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
                   <div className="loader"></div>
                   <p className="ml-2 text-sm">Đang kết nối...</p>
                 </div>
@@ -451,7 +455,9 @@ const Home = () => {
                 )}
               </div>
             </div>
+            
           </div>
+
         </div>
       </div>
 
@@ -463,7 +469,7 @@ const Home = () => {
               {devices.map((device) => (
                 <div key={device._id} className="device-card bg-white rounded-lg shadow-md p-3 relative">
                   {loadingDeviceIds.includes(device.device_id) && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg z-10">
+                    <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-lg z-10">
                       <div className="loader"></div>
                       <p className="ml-2 font-semibold">Đang kết nối...</p>
                     </div>
