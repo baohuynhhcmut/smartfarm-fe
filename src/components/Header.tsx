@@ -6,13 +6,17 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState("User Name");
+  const [loading, setLoading] = useState(true);
   const BASE_URL = 'http://localhost:8081/api/v1';
 
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          setLoading(false);
+          return;
+        }
 
         const response = await fetch(`${BASE_URL}/user/getByToken`, {
           method: 'GET',
@@ -26,10 +30,16 @@ const Header: React.FC = () => {
         }
 
         const data = await response.json();
-        setUserRole(data.user.role);
-        setUserName(data.user.name);
+        console.log('User data from API:', data); // Debug log
+        
+        // Đảm bảo role được chuẩn hóa thành chữ hoa
+        const role = data.user.role?.toUpperCase();
+        setUserRole(role);
+        setUserName(data.user.name || "User Name");
       } catch (error) {
         console.error('Error fetching user role:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -41,6 +51,11 @@ const Header: React.FC = () => {
   };
 
   const handleUserClick = () => {
+    if (loading) return; // Chờ dữ liệu load xong
+    
+    console.log('Navigating with role:', userRole); // Debug log
+    
+    // Kiểm tra role sau khi đã chuẩn hóa
     if (userRole === 'ADMIN') {
       navigate("/admin/profile");
     } else {
@@ -78,8 +93,6 @@ const styles = {
     alignItems: "center",
     padding: "10px 20px",
     backgroundColor: "#fff",
-    // border: "1px"
-    // boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   title: {
     color: "#F3569B",
