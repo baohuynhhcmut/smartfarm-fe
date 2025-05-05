@@ -85,6 +85,13 @@ interface UserActivity {
   role: string;
 }
 
+// Add type definition for window object
+declare global {
+  interface Window {
+    handleUserDeletion: (user: { name: string; role: string }) => void;
+  }
+}
+
 const DashboardAdmin = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,66 +116,27 @@ const DashboardAdmin = () => {
   const navigate = useNavigate();
 
   const addActivity = (activity: UserActivity) => {
-    setRecentActivities((prev) => [activity, ...prev.slice(0, 4)]);
+    setRecentActivities((prev) => {
+      const newActivities = [activity, ...prev];
+      // Sort activities by timestamp in descending order (newest first)
+      return newActivities
+        .sort((a, b) => {
+          const timeA = new Date(a.time).getTime();
+          const timeB = new Date(b.time).getTime();
+          return timeB - timeA;
+        })
+        .slice(0, 5); // Keep only the 5 most recent activities
+    });
   };
 
-  const handleDeleteUser = async (
-    userId: string,
-    userName: string,
-    userRole: string
-  ) => {
-    try {
-      const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
-      const response = await axios.delete(
-        `${API_URL}/user/deleteUser/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      console.log("Delete user response:", response.data);
-
-      if (response.data.status === 200) {
-        // Cập nhật danh sách users
-        setUsers((prevUsers) =>
-          prevUsers.filter((user) => user._id !== userId)
-        );
-
-        // Tạo activity mới
-        const newActivity: UserActivity = {
-          user: userName,
-          action: "deleted",
-          time: new Date(response.data.timestamp).toLocaleString(),
-          role: userRole,
-        };
-
-        console.log("New activity:", newActivity);
-
-        // Cập nhật recent activities
-        addActivity(newActivity);
-
-        // Cập nhật lại thống kê user theo role
-        const updatedRoleStats: { [role: string]: number } = {};
-        users.forEach((u: User) => {
-          if (u._id !== userId) {
-            const role = u.role || "unknown";
-            updatedRoleStats[role] = (updatedRoleStats[role] || 0) + 1;
-          }
-        });
-
-        const updatedUserRoleData = Object.entries(updatedRoleStats).map(
-          ([role, value]) => ({
-            name: role,
-            value,
-          })
-        );
-        setUserRoleData(updatedUserRoleData);
-      }
-    } catch (err) {
-      console.error("Error deleting user:", err);
-      setError("Lỗi khi xóa người dùng");
-    }
+  // Function to handle user deletion activity
+  const handleUserDeletion = (user: { name: string; role: string }) => {
+    addActivity({
+      user: user.name,
+      action: "deleted",
+      time: new Date().toLocaleString(),
+      role: user.role,
+    });
   };
 
   useEffect(() => {
@@ -288,6 +256,9 @@ const DashboardAdmin = () => {
     console.log("Recent activities updated:", recentActivities);
   }, [recentActivities]);
 
+  // Export handleUserDeletion function
+  window.handleUserDeletion = handleUserDeletion;
+
   // Tổng user
   const totalUsers = users.length;
 
@@ -346,7 +317,7 @@ const DashboardAdmin = () => {
 
   return (
     <div
-      className="space-y-14 p-8 min-h-screen"
+      className="space-y-8 p-8 min-h-screen"
       style={{ backgroundColor: "#FEF4FF" }}
     >
       {/* Header */}
@@ -373,7 +344,7 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
         {stats.map((stat, index) => (
           <Card
             key={index}
@@ -404,7 +375,7 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Distribution Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-8">
         <Card className="rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-green-700 uppercase tracking-wide">
@@ -503,7 +474,7 @@ const DashboardAdmin = () => {
       </div>
 
       {/* Recent Activities */}
-      <Card className="rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
+      <Card className="rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 mb-8">
         <CardHeader>
           <CardTitle className="text-lg font-bold text-green-700 uppercase tracking-wide">
             Recent Activities
@@ -549,7 +520,7 @@ const DashboardAdmin = () => {
       </Card>
 
       {/* Device Type Distribution */}
-      <Card className="rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 mt-14">
+      <Card className="rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 mt-12">
         <CardHeader>
           <CardTitle className="text-lg font-bold text-green-700 uppercase tracking-wide">
             Device Type Distribution

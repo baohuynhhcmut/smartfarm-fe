@@ -269,7 +269,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"user5\",\r\n    \"password\": \"123\",\r\n    \"name\": \"USER 5\",\r\n    \"phone_number\": \"0123456789\",\r\n    \"street\": \"1A\",\r\n    \"city\": \"TP Thủ Đức\",\r\n    \"state\": \"Ho Chi Minh City\",\r\n    \"latitude\": 10.862624,\r\n    \"longitude\": 106.795492\r\n}",
+							"raw": "{\r\n    \"email\": \"nhannt.nguyen@gmail.com\",\r\n    \"password\": \"123\",\r\n    \"name\": \"Nguyễn Thanh Nhân\",\r\n    \"phone_number\": \"0123456789\",\r\n    \"street\": \"Miếu Bình Đông\",\r\n    \"city\": \"Quận Bình Tân\",\r\n    \"state\": \"Ho Chi Minh City\"\r\n}\r\n// API chỉ cho phép những field này",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -350,6 +350,36 @@
 					"response": []
 				},
 				{
+					"name": "forget Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ngnhan2609@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/user/forgetPassword",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"user",
+								"forgetPassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "update password",
 					"request": {
 						"auth": {
@@ -389,7 +419,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"phone_number\": \"9876543210\",\r\n    \"street\": \"Xa lộ Hà Nội\"\r\n}",
+							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"name\": \"USER 4\",\r\n    \"phone_number\": \"9876543210\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -480,7 +510,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"user4\",\r\n    \"name\": \"Garden2_user4\"\r\n}",
+							"raw": "{\r\n    \"email\": \"ngnhan2609@gmail.com\",\r\n    \"name\": \"Garden1_Nhannt\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -823,7 +853,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"device_name\": \"Soil moisture Sensor\",\r\n    \"type\": \"soil moisture sensor\",\r\n    \"user\": \"user3\",\r\n    \"location\": {\r\n      \"garden_name\": \"Garden1_User3\",\r\n      \"latitude\": 10.783112,\r\n      \"longitude\": 106.671883\r\n    }\r\n}",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"device_name\": \"Soil moisture Sensor\",\r\n    \"type\": \"soil moisture sensor\",\r\n    \"user\": \"user3\",\r\n    \"location\": \"Garden1_User3\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -853,7 +883,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"user\": \"user3\",\r\n    \"location\": {\r\n      \"garden_name\": \"Garden1_User3\",\r\n      \"latitude\": 10.783112,\r\n      \"longitude\": 106.671883\r\n    }\r\n}",
+							"raw": "{\r\n    \"device_id\": \"dev012\",\r\n    \"user\": null,\r\n    \"location\": null\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -934,6 +964,66 @@
 					"response": []
 				},
 				{
+					"name": "update Device By Threshold",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev002\",\r\n    \"min\": 40,\r\n    \"max\": 85\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/updateDeviceByThreshold",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"updateDeviceByThreshold"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update Device By Threshold",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"device_id\": \"dev001\",\r\n    \"min\": 19,\r\n    \"max\": 35\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/device/updateDeviceByThreshold",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"device",
+								"updateDeviceByThreshold"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "delete Device By Id",
 					"request": {
 						"auth": {
@@ -943,7 +1033,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"device_id\": \"dev012\"\r\n}",
+							"raw": "{\r\n    \"device_id\": \"dev001\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1075,6 +1165,88 @@
 									"key": "year",
 									"value": "2025"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get data by day",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/data/getDataByDay?user=user2&garden_name=Garden1_User2&device_name=Temp Sensor - Garden1_User2&year=2025&month=5&day=1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"data",
+								"getDataByDay"
+							],
+							"query": [
+								{
+									"key": "user",
+									"value": "user2"
+								},
+								{
+									"key": "garden_name",
+									"value": "Garden1_User2"
+								},
+								{
+									"key": "device_name",
+									"value": "Temp Sensor - Garden1_User2"
+								},
+								{
+									"key": "year",
+									"value": "2025"
+								},
+								{
+									"key": "month",
+									"value": "5"
+								},
+								{
+									"key": "day",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Config - for Admin",
+			"item": [
+				{
+					"name": "update Threshold",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"V1\": { \"min\": 20, \"max\": 34 }, \"V3\": { \"min\": 40, \"max\": 89 } }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/config/updateThreshold",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"config",
+								"updateThreshold"
 							]
 						}
 					},
