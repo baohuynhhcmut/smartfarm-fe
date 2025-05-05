@@ -45,7 +45,7 @@ const Header = styled.div`
 const Title = styled.h1`
   font-size: 1.875rem;
   font-weight: bold;
-  color: #1e293b;
+  color: black;
   margin-bottom: 0.5rem;
 `;
 
@@ -54,7 +54,7 @@ const AddButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: #3b82f6;
+  background-color: black;
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -63,7 +63,15 @@ const AddButton = styled.button`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #3E3A39;
+  }
+`;
+
+const FilterButton = styled(AddButton)<{ isActive: boolean }>`
+  background-color: ${({ isActive }) => isActive ? 'black' : 'black'};
+  
+  &:hover {
+    background-color: ${({ isActive }) => isActive ? 'black' : '#3E3A39'};
   }
 `;
 
@@ -98,11 +106,11 @@ const TableRow = styled.tr`
 const TableCell = styled.td`
   padding: 1rem;
   border-bottom: 1px solid #e2e8f0;
-  color: #475569;
+  color: black;
 `;
 
 const ToggleButton = styled.button<ToggleButtonProps>`
-  background-color: ${({ isOn }) => (isOn ? '#10b981' : '#ef4444')};
+  background-color: ${({ isOn }) => (isOn ? 'black' : '#ADABAA')};
   border: none;
   border-radius: 1rem;
   width: 3rem;
@@ -126,7 +134,7 @@ const ToggleButton = styled.button<ToggleButtonProps>`
 
 const ActionButton = styled.button`
   background-color: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E8E8E8;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 0.25rem;
@@ -138,20 +146,20 @@ const ActionButton = styled.button`
 `;
 
 const DeleteButton = styled(ActionButton)`
-  color: #ef4444;
-  border-color: #fecaca;
+  color: #FFFFFF;
+  background-color: #FF3737;
 
   &:hover {
-    background-color: #fee2e2;
+    background-color: #FF4F4F;
   }
 `;
 
 const EditButton = styled(ActionButton)`
-  color: #3b82f6;
-  border-color: #bfdbfe;
+  color: black;
+  border-color: #E2E2E2;
 
   &:hover {
-    background-color: #dbeafe;
+    background-color: #E8E8E8;
   }
 `;
 
@@ -166,6 +174,12 @@ const ModalOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 `;
 
 const ModalContent = styled.div`
@@ -177,6 +191,22 @@ const ModalContent = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.2s ease-out;
+  
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+const FilterModal = styled(ModalContent)`
+  max-width: 600px;
 `;
 
 const ModalHeader = styled.div`
@@ -207,6 +237,10 @@ const CloseButton = styled.button`
 `;
 
 const FormGroup = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const FilterGroup = styled(FormGroup)`
   margin-bottom: 1rem;
 `;
 
@@ -251,7 +285,7 @@ const Select = styled.select`
 const SubmitButton = styled.button`
   width: 100%;
   padding: 0.75rem;
-  background-color: #3b82f6;
+  background-color: black;
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -262,22 +296,53 @@ const SubmitButton = styled.button`
   margin-top: 1rem;
 
   &:hover {
-    background-color: #2563eb;
+    background-color: #41403F;
   }
 `;
 
-const FilterButton = styled(AddButton)`
-  background-color: ${({ isActive }: { isActive: boolean }) => 
-    isActive ? '#2563eb' : '#3b82f6'};
+const FilterButtons = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  background-color: ;
 `;
 
-const ErrorMessage = styled.div`
+const ErrorPopup = styled.div`
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
   background-color: #fee2e2;
   border: 1px solid #fecaca;
   color: #b91c1c;
-  padding: 0.75rem;
+  padding: 1rem;
   border-radius: 0.375rem;
-  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 400px;
+  animation: slideIn 0.3s ease-out;
+
+  @keyframes slideIn {
+    from { 
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to { 
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+`;
+
+const CloseErrorButton = styled.button`
+  background: none;
+  border: none;
+  color: #b91c1c;
+  font-size: 1.25rem;
+  cursor: pointer;
+  margin-left: 1rem;
 `;
 
 const LoadingSpinner = styled.div`
@@ -307,6 +372,7 @@ const DeviceAdmin = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -320,7 +386,6 @@ const DeviceAdmin = () => {
     location: ''
   });
 
-  // Separate pending and applied filters
   const [appliedFilters, setAppliedFilters] = useState({
     id: '',
     category: '',
@@ -338,6 +403,14 @@ const DeviceAdmin = () => {
     type: '',
     isActive: ''
   });
+
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage);
+    setShowError(true);
+    setTimeout(() => {
+      setShowError(false);
+    }, 5000);
+  };
 
   const fetchDevices = async () => {
     try {
@@ -368,7 +441,7 @@ const DeviceAdmin = () => {
       setDevices(transformedDevices);
       setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      handleError(err instanceof Error ? err.message : 'An unknown error occurred');
       setLoading(false);
     }
   };
@@ -382,7 +455,7 @@ const DeviceAdmin = () => {
       const data = await response.json();
       setGardens(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch gardens');
+      handleError(err instanceof Error ? err.message : 'Failed to fetch gardens');
     }
   };
 
@@ -413,7 +486,7 @@ const DeviceAdmin = () => {
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch filtered devices');
+        throw new Error('Connection failed. Please check and re-enter the information in filters');
       }
       const data = await response.json();
       
@@ -441,7 +514,7 @@ const DeviceAdmin = () => {
       setDevices(transformedDevices);
       setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch filtered devices');
+      handleError(err instanceof Error ? err.message : 'Failed to fetch filtered devices');
       setLoading(false);
     }
   };
@@ -489,7 +562,7 @@ const DeviceAdmin = () => {
           : device
       ));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update device status');
+      handleError(err instanceof Error ? err.message : 'Failed to update device status');
     }
   };
 
@@ -497,7 +570,7 @@ const DeviceAdmin = () => {
     try {
       const deviceToDelete = devices.find(device => device.id === id);
       if (!deviceToDelete) {
-        setError('Device not found in local state');
+        handleError('Device not found in local state');
         return false;
       }
   
@@ -526,14 +599,13 @@ const DeviceAdmin = () => {
       }
     } catch (err) {
       console.error('Delete error:', err);
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      handleError(err instanceof Error ? err.message : 'Delete failed');
       return false;
     }
   };
 
   const handleAddDevice = async () => {
     try {
-      // Validate required fields
       if (!newDevice.device_id || !newDevice.device_name || !newDevice.type) {
         throw new Error('Device ID, Name, and Type are required');
       }
@@ -542,8 +614,8 @@ const DeviceAdmin = () => {
         device_id: newDevice.device_id,
         device_name: newDevice.device_name,
         type: newDevice.type,
-        user: newDevice.user || undefined, // Make user optional
-        location: newDevice.location || undefined // Make location optional
+        user: newDevice.user || undefined,
+        location: newDevice.location || undefined
       };
   
       const response = await fetch(`${BASE_URL}/device/createDevice`, {
@@ -561,7 +633,6 @@ const DeviceAdmin = () => {
   
       const data = await response.json();
   
-      // Check if the response matches the expected format
       if (data.status !== 201 || data.message !== "Create device successfully") {
         throw new Error('Unexpected response format');
       }
@@ -575,7 +646,7 @@ const DeviceAdmin = () => {
         registeredAt: data.data.createdAt,
         username: data.data.user,
         type: data.data.type,
-        category: data.data.category || 'sensor', // Default to 'sensor' as shown in example
+        category: data.data.category || 'sensor',
         is_active: data.data.is_active,
         garden_name: data.data.location?.garden_name || 'N/A',
         time_on: data.data.time_on,
@@ -591,20 +662,17 @@ const DeviceAdmin = () => {
         user: '',
         location: ''
       });
-      setError(null); // Clear any previous errors
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add device');
+      handleError(err instanceof Error ? err.message : 'Failed to add device');
     }
   };
 
-
   const [isFindingGarden, setIsFindingGarden] = useState(false);
-
-  // ... (keep all the existing functions until handleAddDevice)
 
   const handleFindGarden = async () => {
     if (!newDevice.user) {
-      setError('Please enter a user email first');
+      handleError('Please enter a user email first');
       return;
     }
 
@@ -618,14 +686,12 @@ const DeviceAdmin = () => {
       setGardens(data.data || []);
       
       if (data.data && data.data.length > 0) {
-        // Auto-select the first garden if available
         setNewDevice({...newDevice, location: data.data[0].name});
       } else {
-        // No gardens found for this user
         setNewDevice({...newDevice, location: 'no garden'});
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch gardens');
+      handleError(err instanceof Error ? err.message : 'Failed to fetch gardens');
       setNewDevice({...newDevice, location: 'no garden'});
     } finally {
       setIsFindingGarden(false);
@@ -636,7 +702,6 @@ const DeviceAdmin = () => {
     if (!currentDevice) return;
     
     try {
-      // Prepare the payload for the API request
       const payload = {
         device_id: currentDevice.device_id,
         user: currentDevice.username || null,
@@ -658,7 +723,6 @@ const DeviceAdmin = () => {
   
       const data = await response.json();
       
-      // Update state after successful response
       setDevices(devices.map(device => 
         device.id === currentDevice.id 
           ? { 
@@ -673,11 +737,10 @@ const DeviceAdmin = () => {
       setCurrentDevice(null);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update device');
+      handleError(err instanceof Error ? err.message : 'Failed to update device');
       console.error('Update error:', err);
     }
   };
-  
 
   const openEditModal = (device: Device) => {
     setCurrentDevice(device);
@@ -758,7 +821,7 @@ const DeviceAdmin = () => {
           : device
       ));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update device timer');
+      handleError(err instanceof Error ? err.message : 'Failed to update device timer');
     }
   };
 
@@ -766,12 +829,18 @@ const DeviceAdmin = () => {
     return <Container>Loading devices...</Container>;
   }
 
-  if (error) {
-    return <Container>Error: {error}</Container>;
-  }
-
   return (
     <Container>
+      {/* Error Popup */}
+      {showError && (
+        <ErrorPopup>
+          <div>{error}</div>
+          <CloseErrorButton onClick={() => setShowError(false)}>
+            &times;
+          </CloseErrorButton>
+        </ErrorPopup>
+      )}
+
       <Header>
         <Title>Device Management</Title>
         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -780,7 +849,7 @@ const DeviceAdmin = () => {
             Add New Device
           </AddButton>
           <FilterButton 
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            onClick={() => setIsFilterOpen(true)}
             isActive={isFilterOpen}
           >
             <FaFilter />
@@ -789,88 +858,92 @@ const DeviceAdmin = () => {
         </div>
       </Header>
 
+      {/* Filter Modal */}
       {isFilterOpen && (
-        <div style={{ 
-          padding: '1rem', 
-          backgroundColor: '#edf2f7', 
-          borderRadius: '0.5rem',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-            gap: '1rem',
-            marginBottom: '1rem'
-          }}>
-            <FormGroup>
-              <Label>Device ID</Label>
-              <Input 
-                type="text" 
-                value={pendingFilters.id}
-                onChange={(e) => setPendingFilters({...pendingFilters, id: e.target.value})}
-                placeholder="Filter by ID"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Category</Label>
-              <Input 
-                type="text" 
-                value={pendingFilters.category}
-                onChange={(e) => setPendingFilters({...pendingFilters, category: e.target.value})}
-                placeholder="Filter by category"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Username</Label>
-              <Input 
-                type="text" 
-                value={pendingFilters.username}
-                onChange={(e) => setPendingFilters({...pendingFilters, username: e.target.value})}
-                placeholder="Filter by username"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Garden Name</Label>
-              <Input 
-                type="text" 
-                value={pendingFilters.gardenName}
-                onChange={(e) => setPendingFilters({...pendingFilters, gardenName: e.target.value})}
-                placeholder="Filter by garden"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Type</Label>
-              <Input 
-                type="text" 
-                value={pendingFilters.type}
-                onChange={(e) => setPendingFilters({...pendingFilters, type: e.target.value})}
-                placeholder="Filter by type"
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Status</Label>
-              <Select
-                value={pendingFilters.isActive}
-                onChange={(e) => setPendingFilters({...pendingFilters, isActive: e.target.value})}
+        <ModalOverlay onClick={() => setIsFilterOpen(false)}>
+          <FilterModal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>Filter Devices</ModalTitle>
+              <CloseButton onClick={() => setIsFilterOpen(false)}>&times;</CloseButton>
+            </ModalHeader>
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+              gap: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <FilterGroup>
+                <Label>Device ID</Label>
+                <Input 
+                  type="text" 
+                  value={pendingFilters.id}
+                  onChange={(e) => setPendingFilters({...pendingFilters, id: e.target.value})}
+                  placeholder="Filter by ID"
+                />
+              </FilterGroup>
+              <FilterGroup>
+                <Label>Category</Label>
+                <Input 
+                  type="text" 
+                  value={pendingFilters.category}
+                  onChange={(e) => setPendingFilters({...pendingFilters, category: e.target.value})}
+                  placeholder="Filter by category"
+                />
+              </FilterGroup>
+              <FilterGroup>
+                <Label>Username</Label>
+                <Input 
+                  type="text" 
+                  value={pendingFilters.username}
+                  onChange={(e) => setPendingFilters({...pendingFilters, username: e.target.value})}
+                  placeholder="Filter by username"
+                />
+              </FilterGroup>
+              <FilterGroup>
+                <Label>Garden Name</Label>
+                <Input 
+                  type="text" 
+                  value={pendingFilters.gardenName}
+                  onChange={(e) => setPendingFilters({...pendingFilters, gardenName: e.target.value})}
+                  placeholder="Filter by garden"
+                />
+              </FilterGroup>
+              <FilterGroup>
+                <Label>Type</Label>
+                <Input 
+                  type="text" 
+                  value={pendingFilters.type}
+                  onChange={(e) => setPendingFilters({...pendingFilters, type: e.target.value})}
+                  placeholder="Filter by type"
+                />
+              </FilterGroup>
+              <FilterGroup>
+                <Label>Status</Label>
+                <Select
+                  value={pendingFilters.isActive}
+                  onChange={(e) => setPendingFilters({...pendingFilters, isActive: e.target.value})}
+                >
+                  <option value="">All</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </Select>
+              </FilterGroup>
+            </div>
+            
+            <FilterButtons>
+              <SubmitButton onClick={applyFilters}>
+                Apply Filters
+              </SubmitButton>
+              <SubmitButton 
+                onClick={clearFilters}
+                style={{ backgroundColor: '#686868' }}
               >
-                <option value="">All</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </Select>
-            </FormGroup>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <SubmitButton onClick={applyFilters}>
-              Apply Filters
-            </SubmitButton>
-            <SubmitButton 
-              onClick={clearFilters}
-              style={{ backgroundColor: '#e53e3e' }}
-            >
-              Clear Filters
-            </SubmitButton>
-          </div>
-        </div>
+                Clear Filters
+              </SubmitButton>
+            </FilterButtons>
+          </FilterModal>
+        </ModalOverlay>
       )}
 
       <TableWrapper>
@@ -939,7 +1012,7 @@ const DeviceAdmin = () => {
       </TableWrapper>
                     
       {/* Add New Device Modal */}
-       {isModalOpen && (
+      {isModalOpen && (
         <ModalOverlay>
           <ModalContent>
             <ModalHeader>
@@ -957,7 +1030,6 @@ const DeviceAdmin = () => {
                 setError(null);
               }}>&times;</CloseButton>
             </ModalHeader>
-            {error && <ErrorMessage>{error}</ErrorMessage>}
             <FormGroup>
               <Label>Device ID *</Label>
               <Input 
@@ -1003,7 +1075,7 @@ const DeviceAdmin = () => {
                   disabled={isFindingGarden || !newDevice.user}
                   style={{
                     padding: '0.5rem 1rem',
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: 'black',
                     color: 'white',
                     border: 'none',
                     borderRadius: '0.375rem',
@@ -1048,164 +1120,162 @@ const DeviceAdmin = () => {
       
       {/* Edit Device Modal */}
       {isEditModalOpen && currentDevice && (
-      <ModalOverlay>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Edit Device</ModalTitle>
-            <CloseButton onClick={() => {
-              setIsEditModalOpen(false);
-              setCurrentDevice(null);
-              setError(null);
-            }}>&times;</CloseButton>
-          </ModalHeader>
-          
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-          
-          <FormGroup>
-            <Label>Device ID</Label>
-            <Input 
-              type="text" 
-              value={currentDevice.device_id}
-              readOnly
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label>Username</Label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <ModalOverlay>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Edit Device</ModalTitle>
+              <CloseButton onClick={() => {
+                setIsEditModalOpen(false);
+                setCurrentDevice(null);
+                setError(null);
+              }}>&times;</CloseButton>
+            </ModalHeader>
+            
+            <FormGroup>
+              <Label>Device ID</Label>
               <Input 
                 type="text" 
-                value={currentDevice.username || ''}
-                onChange={(e) => {
-                  const newUsername = e.target.value;
-                  setCurrentDevice({
-                    ...currentDevice, 
-                    username: newUsername || null,
-                    garden_name: null // Reset garden when changing user
-                  });
-                  setGardens([]); // Clear previous gardens
-                }}
-                placeholder="Enter user email"
-                style={{ flex: 1 }}
+                value={currentDevice.device_id}
+                readOnly
               />
-              <button 
-                onClick={async () => {
-                  if (!currentDevice.username) {
-                    setError('Please enter a user email first');
-                    return;
-                  }
-                  setIsFindingGarden(true);
-                  try {
-                    await fetchGardensByUser(currentDevice.username);
-                  } catch (err) {
-                    setError('Failed to fetch gardens');
-                  } finally {
-                    setIsFindingGarden(false);
-                  }
-                }}
-                disabled={isFindingGarden || !currentDevice.username}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                  opacity: isFindingGarden || !currentDevice.username ? 0.5 : 1
-                }}
-              >
-                {isFindingGarden ? 'Finding...' : 'Find Garden'}
-              </button>
-              {currentDevice.username && (
-                <button 
-                  onClick={() => {
+            </FormGroup>
+            
+            <FormGroup>
+              <Label>Username</Label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Input 
+                  type="text" 
+                  value={currentDevice.username || ''}
+                  onChange={(e) => {
+                    const newUsername = e.target.value;
                     setCurrentDevice({
                       ...currentDevice, 
-                      username: null,
+                      username: newUsername || null,
                       garden_name: null
                     });
                     setGardens([]);
                   }}
+                  placeholder="Enter user email"
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  onClick={async () => {
+                    if (!currentDevice.username) {
+                      handleError('Please enter a user email first');
+                      return;
+                    }
+                    setIsFindingGarden(true);
+                    try {
+                      await fetchGardensByUser(currentDevice.username);
+                    } catch (err) {
+                      handleError('Failed to fetch gardens');
+                    } finally {
+                      setIsFindingGarden(false);
+                    }
+                  }}
+                  disabled={isFindingGarden || !currentDevice.username}
                   style={{
                     padding: '0.5rem 1rem',
-                    backgroundColor: '#ef4444',
+                    backgroundColor: 'black',
                     color: 'white',
                     border: 'none',
                     borderRadius: '0.375rem',
                     cursor: 'pointer',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    opacity: isFindingGarden || !currentDevice.username ? 0.5 : 1
                   }}
                 >
-                  Clear User
+                  {isFindingGarden ? 'Finding...' : 'Find Garden'}
                 </button>
-              )}
-            </div>
-          </FormGroup>
-          
-          <FormGroup>
-            <Label>Garden Name</Label>
-            {currentDevice.username ? (
-              <>
-                {gardens.length > 0 ? (
-                  <Select
-                    value={currentDevice.garden_name || ''}
-                    onChange={(e) => setCurrentDevice({
-                      ...currentDevice, 
-                      garden_name: e.target.value || null
-                    })}
+                {currentDevice.username && (
+                  <button 
+                    onClick={() => {
+                      setCurrentDevice({
+                        ...currentDevice, 
+                        username: null,
+                        garden_name: null
+                      });
+                      setGardens([]);
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#FF3737',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontWeight: 500
+                    }}
                   >
-                    <option value="">Select a garden</option>
-                    {gardens.map(garden => (
-                      <option key={garden._id} value={garden.name}>
-                        {garden.name}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <Input 
-                      type="text" 
+                    Clear User
+                  </button>
+                )}
+              </div>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label>Garden Name</Label>
+              {currentDevice.username ? (
+                <>
+                  {gardens.length > 0 ? (
+                    <Select
                       value={currentDevice.garden_name || ''}
                       onChange={(e) => setCurrentDevice({
                         ...currentDevice, 
                         garden_name: e.target.value || null
                       })}
-                      placeholder="No gardens found for this user"
-                      style={{ flex: 1 }}
-                    />
-                    <button 
-                      onClick={() => fetchGardensByUser(currentDevice.username || '')}
-                      disabled={isFindingGarden}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: 'pointer',
-                        fontWeight: 500,
-                        opacity: isFindingGarden ? 0.5 : 1
-                      }}
                     >
-                      {isFindingGarden ? 'Searching...' : 'Refresh'}
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ color: '#64748b', padding: '0.5rem 0' }}>
-                Please assign a user first to select a garden
-              </div>
-            )}
-          </FormGroup>
-          
-          <SubmitButton onClick={handleEditDevice}>
-            Save Changes
-          </SubmitButton>
-        </ModalContent>
-      </ModalOverlay>
-    )}
+                      <option value="">Select a garden</option>
+                      {gardens.map(garden => (
+                        <option key={garden._id} value={garden.name}>
+                          {garden.name}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <Input 
+                        type="text" 
+                        value={currentDevice.garden_name || ''}
+                        onChange={(e) => setCurrentDevice({
+                          ...currentDevice, 
+                          garden_name: e.target.value || null
+                        })}
+                        placeholder="No gardens found for this user"
+                        style={{ flex: 1 }}
+                      />
+                      <button 
+                        onClick={() => fetchGardensByUser(currentDevice.username || '')}
+                        disabled={isFindingGarden}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: 'black',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          opacity: isFindingGarden ? 0.5 : 1
+                        }}
+                      >
+                        {isFindingGarden ? 'Searching...' : 'Refresh'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ color: '#64748b', padding: '0.5rem 0' }}>
+                  Please assign a user first to select a garden
+                </div>
+              )}
+            </FormGroup>
+            
+            <SubmitButton onClick={handleEditDevice}>
+              Save Changes
+            </SubmitButton>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };
