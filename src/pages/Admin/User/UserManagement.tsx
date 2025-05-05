@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FaUserPlus, FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { FaUserPlus, FaEdit, FaTrash, FaEye, FaTree } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getAllUser } from "@/api/admin/user";
 
@@ -83,6 +83,19 @@ interface Device {
   };
 }
 
+interface Garden {
+  _id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface UserData {
+  status: number;
+  message: string;
+  data: User[];
+}
+
 const UserPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -117,6 +130,15 @@ const UserPage = () => {
   >(null);
   const [isNoDeviceDialogOpen, setIsNoDeviceDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [isViewGardensDialogOpen, setIsViewGardensDialogOpen] = useState(false);
+  const [userGardens, setUserGardens] = useState<Garden[]>([]);
+  const [isNoGardenDialogOpen, setIsNoGardenDialogOpen] = useState(false);
+  const [isEditGardenDialogOpen, setIsEditGardenDialogOpen] = useState(false);
+  const [isDeleteGardenDialogOpen, setIsDeleteGardenDialogOpen] =
+    useState(false);
+  const [selectedGarden, setSelectedGarden] = useState<Garden | null>(null);
+  const [editedGarden, setEditedGarden] = useState<Partial<Garden>>({});
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   const handleTokenError = () => {
     // Xóa token khi hết hạn hoặc không hợp lệ
@@ -512,20 +534,127 @@ const UserPage = () => {
     }
   };
 
-  const [userData, setUserData] = useState<any>([]);
+  const handleViewGardens = async (user: User) => {
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+      const response = await axios.get(`${API_URL}/user/getGarden`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { email: user.email },
+      });
+
+      if (
+        response.data &&
+        response.data.status === 200 &&
+        Array.isArray(response.data.data) &&
+        response.data.data.length > 0
+      ) {
+        setUserGardens(response.data.data);
+        setSelectedUser(user);
+        setIsViewGardensDialogOpen(true);
+      } else {
+        setIsNoGardenDialogOpen(true);
+        setSelectedUser(user);
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to fetch gardens");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }
+  };
+
+  const handleEditGarden = async () => {
+    if (!selectedGarden || !selectedUser) return;
+
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const response = await axios.patch(
+        `${API_URL}/user/updateGarden`,
+        {
+          email: selectedUser.email,
+          name: selectedGarden.name,
+          newName: editedGarden.name,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && response.data.status === 200) {
+        setUserGardens(response.data.data);
+        setIsEditGardenDialogOpen(false);
+        setSelectedGarden(null);
+        setEditedGarden({});
+        toast.success("Garden name updated successfully");
+      } else {
+        toast.error(response.data?.message || "Failed to update garden name");
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(
+          err.response?.data?.message || "Failed to update garden name"
+        );
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }
+  };
+
+  const handleDeleteGarden = async () => {
+    if (!selectedGarden || !selectedUser) return;
+
+    try {
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjI3NTM5OCwiZXhwIjoxNzQ2ODgwMTk4fQ.X02c3cZBHg9W4vaBo0_eqjh8AYpW-1JmFbJvpndLfL4";
+
+      const response = await axios.delete(`${API_URL}/user/deleteGarden`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          email: selectedUser.email,
+          name: selectedGarden.name,
+        },
+      });
+
+      if (response.data && response.data.status === 200) {
+        setUserGardens(userGardens.filter((g) => g._id !== selectedGarden._id));
+        setIsDeleteGardenDialogOpen(false);
+        setSelectedGarden(null);
+        toast.success("Garden deleted successfully");
+      } else {
+        toast.error(response.data?.message || "Failed to delete garden");
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast.error(err.response?.data?.message || "Failed to delete garden");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    }
+  };
+
   // Fetching API
   useEffect(() => {
     const fetchAPI = async () => {
-      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjExNzA0OCwiZXhwIjoxNzQ2MjAzNDQ4fQ.Eyh1x_gH5aNOkWhyOQvLy_-ldlerwWlpel6VOs_wVlk"
-      const response = await getAllUser(token)
-      setUserData(response.data)
-    }
-    fetchAPI()
-  },[])
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTZmNzQyNzUxZGUzM2UzZjVlN2IiLCJlbWFpbCI6ImFkbWluMSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0NjExNzA0OCwiZXhwIjoxNzQ2MjAzNDQ4fQ.Eyh1x_gH5aNOkWhyOQvLy_-ldlerwWlpel6VOs_wVlk";
+      const response = await getAllUser(token);
+      setUserData(response.data);
+    };
+    fetchAPI();
+  }, []);
 
-  console.log(userData)
+  console.log(userData);
 
-  
   return (
     <div className="space-y-6">
       {isLoading && (
@@ -863,6 +992,13 @@ const UserPage = () => {
                         onClick={() => handleViewDevices(user)}
                       >
                         <FaEye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewGardens(user)}
+                      >
+                        <FaTree className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
@@ -1284,6 +1420,192 @@ const UserPage = () => {
               }}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Gardens Dialog */}
+      <Dialog
+        open={isViewGardensDialogOpen}
+        onOpenChange={setIsViewGardensDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Gardens of {selectedUser?.name}</DialogTitle>
+            <DialogDescription>
+              View all gardens associated with this user
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {userGardens.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 min-h-[200px]">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-700 mb-2">
+                    This user currently has no gardens.
+                  </p>
+                  <p className="text-base text-gray-500">
+                    Please add gardens to this user for monitoring and
+                    management.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Garden Name</TableHead>
+                      <TableHead>Latitude</TableHead>
+                      <TableHead>Longitude</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userGardens.map((garden) => (
+                      <TableRow key={garden._id}>
+                        <TableCell>{garden.name}</TableCell>
+                        <TableCell>{garden.latitude}</TableCell>
+                        <TableCell>{garden.longitude}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedGarden(garden);
+                                setEditedGarden(garden);
+                                setIsEditGardenDialogOpen(true);
+                              }}
+                            >
+                              <FaEdit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedGarden(garden);
+                                setIsDeleteGardenDialogOpen(true);
+                              }}
+                            >
+                              <FaTrash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewGardensDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* No Garden Dialog */}
+      <Dialog
+        open={isNoGardenDialogOpen}
+        onOpenChange={setIsNoGardenDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notice</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 text-center">
+            <p className="text-lg font-semibold text-green-700 mb-2">
+              This user currently has no gardens.
+            </p>
+            <p className="text-base text-gray-500">
+              Please add gardens to this user for monitoring and management.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsNoGardenDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Garden Dialog */}
+      <Dialog
+        open={isEditGardenDialogOpen}
+        onOpenChange={setIsEditGardenDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Garden Name</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-garden-name" className="text-right">
+                Garden Name
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-garden-name"
+                  value={editedGarden.name || ""}
+                  onChange={(e) =>
+                    setEditedGarden({
+                      ...editedGarden,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder="Enter new garden name"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditGardenDialogOpen(false);
+                setEditedGarden({});
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleEditGarden}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Garden Dialog */}
+      <Dialog
+        open={isDeleteGardenDialogOpen}
+        onOpenChange={setIsDeleteGardenDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this garden? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteGardenDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteGarden}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
