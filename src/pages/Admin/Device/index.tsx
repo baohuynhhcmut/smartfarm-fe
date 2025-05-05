@@ -21,6 +21,10 @@ interface Device {
   garden_name: string | null;
   time_on: string | null;
   time_off: string | null;
+  threshold?: {
+    min: number;
+    max: number;
+  };
 }
 
 const Container = styled.div`
@@ -357,7 +361,8 @@ const DeviceAdmin = () => {
         is_active: device.is_active,
         garden_name: device.location?.garden_name || null,
         time_on: device.time_on,
-        time_off: device.time_off
+        time_off: device.time_off,
+        threshold: device.threshold || undefined
       }));
       
       setDevices(transformedDevices);
@@ -631,13 +636,11 @@ const DeviceAdmin = () => {
     if (!currentDevice) return;
     
     try {
-      // Prepare payload according to the API requirements
+      // Prepare the payload for the API request
       const payload = {
         device_id: currentDevice.device_id,
-        user: currentDevice.username || null, // Set to null if no username
-        location: currentDevice.garden_name !== 'N/A' && currentDevice.garden_name !== 'no garden' 
-          ? { garden_name: currentDevice.garden_name }
-          : null
+        user: currentDevice.username || null,
+        location: currentDevice.garden_name || null
       };
   
       const response = await fetch(`${BASE_URL}/device/updateDeviceByUser`, {
@@ -661,7 +664,7 @@ const DeviceAdmin = () => {
           ? { 
               ...device,
               username: data.data.user || null,
-              garden_name: data.data.location?.garden_name || 'N/A'
+              garden_name: data.data.location?.garden_name || null
             } 
           : device
       ));
@@ -674,6 +677,7 @@ const DeviceAdmin = () => {
       console.error('Update error:', err);
     }
   };
+  
 
   const openEditModal = (device: Device) => {
     setCurrentDevice(device);
@@ -878,6 +882,7 @@ const DeviceAdmin = () => {
               <TableHeader>Garden Name</TableHeader>
               <TableHeader>Type</TableHeader>
               <TableHeader>Category</TableHeader>
+              <TableHeader>Threshold</TableHeader>
               <TableHeader>Time On</TableHeader>
               <TableHeader>Time Off</TableHeader>
               <TableHeader>Registered At</TableHeader>
@@ -894,6 +899,9 @@ const DeviceAdmin = () => {
                 <TableCell>{device.garden_name || 'N/A'}</TableCell>
                 <TableCell>{device.type}</TableCell>
                 <TableCell>{device.category}</TableCell>
+                <TableCell>
+                  {device.threshold ? `${device.threshold.min}-${device.threshold.max}` : 'N/A'}
+                </TableCell>
                 <TableCell>{formatDateTime(device.time_on)}</TableCell>
                 <TableCell>{formatDateTime(device.time_off)}</TableCell>
                 <TableCell>{formatDateTime(device.registeredAt)}</TableCell>
@@ -1040,128 +1048,102 @@ const DeviceAdmin = () => {
       
       {/* Edit Device Modal */}
       {isEditModalOpen && currentDevice && (
-        <ModalOverlay>
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Edit Device</ModalTitle>
-              <CloseButton onClick={() => {
-                setIsEditModalOpen(false);
-                setCurrentDevice(null);
-                setError(null);
-              }}>&times;</CloseButton>
-            </ModalHeader>
-            
-            {error && <ErrorMessage>{error}</ErrorMessage>}
-            
-            <FormGroup>
-              <Label>Device ID</Label>
+      <ModalOverlay>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Edit Device</ModalTitle>
+            <CloseButton onClick={() => {
+              setIsEditModalOpen(false);
+              setCurrentDevice(null);
+              setError(null);
+            }}>&times;</CloseButton>
+          </ModalHeader>
+          
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          
+          <FormGroup>
+            <Label>Device ID</Label>
+            <Input 
+              type="text" 
+              value={currentDevice.device_id}
+              readOnly
+            />
+          </FormGroup>
+          
+          <FormGroup>
+            <Label>Username</Label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <Input 
                 type="text" 
-                value={currentDevice.device_id}
-                readOnly
+                value={currentDevice.username || ''}
+                onChange={(e) => {
+                  const newUsername = e.target.value;
+                  setCurrentDevice({
+                    ...currentDevice, 
+                    username: newUsername || null,
+                    garden_name: null // Reset garden when changing user
+                  });
+                  setGardens([]); // Clear previous gardens
+                }}
+                placeholder="Enter user email"
+                style={{ flex: 1 }}
               />
-            </FormGroup>
-            
-            <FormGroup>
-              <Label>Device Name</Label>
-              <Input 
-                type="text" 
-                value={currentDevice.name}
-                onChange={(e) => setCurrentDevice({
-                  ...currentDevice, 
-                  name: e.target.value
-                })}
-                placeholder="Enter device name"
-              />
-            </FormGroup>
-            
-            <FormGroup>
-              <Label>Device Type</Label>
-              <Input 
-                type="text" 
-                value={currentDevice.type}
-                onChange={(e) => setCurrentDevice({
-                  ...currentDevice, 
-                  type: e.target.value
-                })}
-                placeholder="Enter device type"
-              />
-            </FormGroup>
-            
-            <FormGroup>
-              <Label>Username</Label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Input 
-                  type="email" 
-                  value={currentDevice.username || ''}
-                  onChange={(e) => {
-                    const newUsername = e.target.value;
+              <button 
+                onClick={async () => {
+                  if (!currentDevice.username) {
+                    setError('Please enter a user email first');
+                    return;
+                  }
+                  setIsFindingGarden(true);
+                  try {
+                    await fetchGardensByUser(currentDevice.username);
+                  } catch (err) {
+                    setError('Failed to fetch gardens');
+                  } finally {
+                    setIsFindingGarden(false);
+                  }
+                }}
+                disabled={isFindingGarden || !currentDevice.username}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  opacity: isFindingGarden || !currentDevice.username ? 0.5 : 1
+                }}
+              >
+                {isFindingGarden ? 'Finding...' : 'Find Garden'}
+              </button>
+              {currentDevice.username && (
+                <button 
+                  onClick={() => {
                     setCurrentDevice({
                       ...currentDevice, 
-                      username: newUsername || null,
-                      garden_name: null // Reset garden when changing user
+                      username: null,
+                      garden_name: null
                     });
-                    setGardens([]); // Clear previous gardens
+                    setGardens([]);
                   }}
-                  placeholder="Enter user email"
-                  style={{ flex: 1 }}
-                />
-                <button 
-                  onClick={async () => {
-                    if (!currentDevice.username) {
-                      setError('Please enter a user email first');
-                      return;
-                    }
-                    setIsFindingGarden(true);
-                    try {
-                      await fetchGardensByUser(currentDevice.username);
-                    } catch (err) {
-                      setError('Failed to fetch gardens');
-                    } finally {
-                      setIsFindingGarden(false);
-                    }
-                  }}
-                  disabled={isFindingGarden || !currentDevice.username}
                   style={{
                     padding: '0.5rem 1rem',
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: '#ef4444',
                     color: 'white',
                     border: 'none',
                     borderRadius: '0.375rem',
                     cursor: 'pointer',
-                    fontWeight: 500,
-                    opacity: isFindingGarden || !currentDevice.username ? 0.5 : 1
+                    fontWeight: 500
                   }}
                 >
-                  {isFindingGarden ? 'Finding...' : 'Find Garden'}
+                  Clear User
                 </button>
-                {currentDevice.username && (
-                  <button 
-                    onClick={() => {
-                      setCurrentDevice({
-                        ...currentDevice, 
-                        username: null,
-                        garden_name: null
-                      });
-                      setGardens([]);
-                    }}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      fontWeight: 500
-                    }}
-                  >
-                    Clear User
-                  </button>
-                )}
-              </div>
-            </FormGroup>
-            
-            <FormGroup>
+              )}
+            </div>
+          </FormGroup>
+          
+          <FormGroup>
             <Label>Garden Name</Label>
             {currentDevice.username ? (
               <>
@@ -1173,7 +1155,7 @@ const DeviceAdmin = () => {
                       garden_name: e.target.value || null
                     })}
                   >
-                    <option value="">No Garden</option>
+                    <option value="">Select a garden</option>
                     {gardens.map(garden => (
                       <option key={garden._id} value={garden.name}>
                         {garden.name}
@@ -1189,11 +1171,11 @@ const DeviceAdmin = () => {
                         ...currentDevice, 
                         garden_name: e.target.value || null
                       })}
-                      placeholder="No gardens found or enter manually"
+                      placeholder="No gardens found for this user"
                       style={{ flex: 1 }}
                     />
                     <button 
-                      onClick={handleFindGarden}
+                      onClick={() => fetchGardensByUser(currentDevice.username || '')}
                       disabled={isFindingGarden}
                       style={{
                         padding: '0.5rem 1rem',
@@ -1206,40 +1188,24 @@ const DeviceAdmin = () => {
                         opacity: isFindingGarden ? 0.5 : 1
                       }}
                     >
-                      {isFindingGarden ? 'Searching...' : 'Search Again'}
+                      {isFindingGarden ? 'Searching...' : 'Refresh'}
                     </button>
                   </div>
                 )}
               </>
             ) : (
-              <Input 
-                type="text" 
-                value="Please enter user email first"
-                disabled
-              />
+              <div style={{ color: '#64748b', padding: '0.5rem 0' }}>
+                Please assign a user first to select a garden
+              </div>
             )}
           </FormGroup>
-            
-            <FormGroup>
-              <Label>Device Status</Label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ToggleButton 
-                  isOn={currentDevice.isOn} 
-                  onClick={() => setCurrentDevice({
-                    ...currentDevice,
-                    isOn: !currentDevice.isOn
-                  })}
-                />
-                <span>{currentDevice.isOn ? 'Active' : 'Inactive'}</span>
-              </div>
-            </FormGroup>
-            
-            <SubmitButton onClick={handleEditDevice}>
-              Save Changes
-            </SubmitButton>
-          </ModalContent>
-        </ModalOverlay>
-      )}
+          
+          <SubmitButton onClick={handleEditDevice}>
+            Save Changes
+          </SubmitButton>
+        </ModalContent>
+      </ModalOverlay>
+    )}
     </Container>
   );
 };
