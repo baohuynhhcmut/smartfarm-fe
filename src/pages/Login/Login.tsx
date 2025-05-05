@@ -49,38 +49,38 @@ const Login = () => {
       // Check response status first
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Login failed with status: " + response.status);
+        throw new Error(errorData?.message || "Đăng nhập thất bại: " + response.status);
       }
   
       // Then check content-type
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        throw new Error(text || "Invalid response from server");
+        throw new Error(text || "Phản hồi không hợp lệ từ máy chủ");
       }
   
       const data = await response.json();
   
       // Check token exists
       if (!data.token) {
-        throw new Error("No authentication token received");
+        throw new Error("Không nhận được token xác thực");
       }
   
       // Save token and user data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
   
-      // Simplified role handling - assuming the login response already contains role
+      // Simplified role handling - based on user role in response
       if (data.user.role === "ADMIN") {
         navigate("/admin");
       } else if (data.user.role === "USER") {
         navigate("/user");
       } else {
-        throw new Error("Unknown user role");
+        throw new Error("Vai trò người dùng không xác định");
       }
   
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred during login");
+      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi trong quá trình đăng nhập");
       console.error("Login error:", err);
     }
   };

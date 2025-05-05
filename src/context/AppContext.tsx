@@ -14,6 +14,39 @@ interface SensorData {
   timestamp?: string;
 }
 
+// Garden interface
+export interface Garden {
+  _id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+// Device interface
+export interface Device {
+  _id: string;
+  device_id: string;
+  device_name: string;
+  feed: string;
+  type: string;
+  category: string;
+  location: {
+    garden_name: string;
+    latitude: number;
+    longitude: number;
+  };
+  threshold: {
+    min: number;
+    max: number;
+  };
+  mode: string;
+  status: string;
+  user: string;
+  time_on: string | null;
+  time_off: string | null;
+  is_active: boolean;
+}
+
 // State tổng thể của ứng dụng
 interface AppState {
   socket: {
@@ -30,6 +63,10 @@ interface AppState {
   };
   user: {
     user: any;
+    gardens: Garden[];
+    selectedGarden: Garden | null;
+    devices: Device[];
+    isLoadingDevices: boolean;
   };
 }
 
@@ -44,7 +81,11 @@ type AppAction =
   | { type: 'SET_SOIL_MOISTURE_DATA', payload: SensorData }
   | { type: 'SET_PUMP_DATA', payload: SensorData }
   | { type: 'SET_LED_DATA', payload: SensorData }
-  | { type: 'SET_USER', payload: any };
+  | { type: 'SET_USER', payload: any }
+  | { type: 'SET_GARDENS', payload: Garden[] }
+  | { type: 'SET_SELECTED_GARDEN', payload: Garden | null }
+  | { type: 'SET_DEVICES', payload: Device[] }
+  | { type: 'SET_LOADING_DEVICES', payload: boolean };
 
 // Khởi tạo state mặc định
 const initialState: AppState = {
@@ -62,6 +103,10 @@ const initialState: AppState = {
   },
   user: {
     user: null,
+    gardens: [],
+    selectedGarden: null,
+    devices: [],
+    isLoadingDevices: false,
   },
 };
 
@@ -155,11 +200,45 @@ function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
     case 'SET_USER':
+      console.log('Context - User data updated:', action.payload);
       return {
         ...state,
         user: {
           ...state.user,
           user: action.payload,
+          gardens: action.payload?.gardens || [],
+        },
+      };
+    case 'SET_GARDENS':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          gardens: action.payload,
+        },
+      };
+    case 'SET_SELECTED_GARDEN':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          selectedGarden: action.payload,
+        },
+      };
+    case 'SET_DEVICES':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          devices: action.payload,
+        },
+      };
+    case 'SET_LOADING_DEVICES':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          isLoadingDevices: action.payload,
         },
       };
     default:

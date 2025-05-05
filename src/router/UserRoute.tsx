@@ -23,7 +23,7 @@ const userRouter = {
         element: <Profile />,
       },
       {
-        path: "home2",
+        path: "analytics",
         element: <HomePage2 />,
       },
       {

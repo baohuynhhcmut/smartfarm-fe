@@ -1,0 +1,114 @@
+.map-container {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.map-container:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for the popup container */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  width: 250px !important;
+}
+
+.leaflet-popup-tip {
+  background-color: #F3569B;
+}
+
+/* Garden popup styling */
+.garden-popup {
+  padding: 0;
+}
+
+.garden-name {
+  background: linear-gradient(to right, #F3569B, #FF8FB8);
+  color: white;
+  margin: 0;
+  padding: 12px 15px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.garden-info {
+  padding: 15px;
+  background-color: white;
+}
+
+.garden-info p {
+  margin: 8px 0;
+  color: #444;
+  font-size: 14px;
+}
+
+.garden-info p strong {
+  color: #333;
+}
+
+/* Button styling */
+.view-garden-btn {
+  width: 100%;
+  background-color: #F3569B;
+  color: white;
+  border: none;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-garden-btn:hover {
+  background-color: #D83A7D;
+}
+
+/* Improve marker icon appearance */
+.garden-marker-icon {
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+.garden-marker-icon:hover {
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.5));
+  transform: scale(1.1);
+}
+
+/* Animation for marker when hovered */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.leaflet-marker-icon:hover {
+  animation: pulse 1.5s infinite;
+}
+
+/* Style for hover effect on popup close button */
+.leaflet-popup-close-button {
+  color: white !important;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.leaflet-popup-close-button:hover {
+  opacity: 1;
+  transform: scale(1.2);
+} 

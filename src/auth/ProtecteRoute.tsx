@@ -2,25 +2,63 @@ import { getToken } from "@/utils/token"
 import { useEffect, useState } from "react"
 import { useNavigate, Outlet } from "react-router-dom"
 import { getUserByToken } from "@/api/Auth"
+import { useAppContext } from "@/context/AppContext"
 
 const ProtecteRoute = () => {
     const navigate = useNavigate()
-    const [load, setLoad] = useState(false)
-    const [user, setUser] = useState(null)
+    const [load, setLoad] = useState(true)
+    const { dispatch } = useAppContext()
 
     useEffect(() => {
         const fetchAPI = async () => {
-            const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2QxOTk1M2ZkNWQ5NzAyODBhMGIwOTAiLCJlbWFpbCI6InVzZXIyIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NDU5MTQxMDgsImV4cCI6MTc0NjAwMDUwOH0.z24XR-3r57pnqQeu8H3SlaY-h5A-J554j6pbN4MR3Xc"
-            const response = await getUserByToken(token)
-            setUser(response.user)
+            try {
+                // Get token from localStorage
+                const token = localStorage.getItem("token")
+                
+                if (!token) {
+                    console.error("No token found in localStorage")
+                    navigate("/")
+                    return
+                }
+                
+                // Fetch user data with the token
+                const response = await fetch("http://localhost:8081/api/v1/user/getByToken", {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                })
+                
+                if (!response.ok) {
+                    console.error("Failed to authenticate user")
+                    navigate("/")
+                    return
+                }
+                
+                const data = await response.json()
+                const user = data.user
+                
+                // Save user in context
+                dispatch({ type: 'SET_USER', payload: user })
+                
+                // Check user role and redirect if needed
+                if (user.role === "ADMIN" && window.location.pathname.includes("/user")) {
+                    navigate("/admin")
+                } else if (user.role === "USER" && window.location.pathname.includes("/admin")) {
+                    navigate("/user")
+                }
+                
+                setLoad(false)
+            } catch (error) {
+                console.error("Authentication error:", error)
+                navigate("/")
+            }
         }
+        
         fetchAPI()
-    }, [])
-
-    console.log(user)
+    }, [navigate, dispatch])
     
     if(load) {
-        return <div className="flex items-center justify-center text-xl">Loading...</div>
+        return <div className="flex items-center justify-center text-xl h-screen">Đang tải...</div>
     }
     
     return <Outlet />
