@@ -2,10 +2,9 @@
 import LayoutAdmin from "@/layout/admin";
 import DashboardAdmin from "@/pages/Admin/Dashboard/AdminDashboard";
 import DeviceAdmin from "@/pages/Admin/Device";
-import UserAdmin from "@/pages/Admin/User";
-import Profile from "../pages/User/Profile";
 import UserPage from "@/pages/Admin/User/UserManagement";
-
+// import UserAdmin from "@/pages/Admin/User/UserManagement";
+import Profile from "../pages/User/Profile";
 const adminRouter = {
   path: "",
   element: <LayoutAdmin />,
@@ -30,4 +29,3 @@ const adminRouter = {
 };
 
 export default adminRouter;
-
