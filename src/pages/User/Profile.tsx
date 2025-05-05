@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const Profile = () => {
+  // State management
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,13 +12,7 @@ const Profile = () => {
   const [editPasswordMode, setEditPasswordMode] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    phone_number: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      country: ''
-    }
+    phone_number: ''
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -25,9 +20,12 @@ const Profile = () => {
     confirmPassword: ''
   });
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const BASE_URL = 'http://localhost:8081/api/v1';
 
+  // API handlers
   const handleLogin = async () => {
     try {
       setLoading(true);
@@ -70,13 +68,7 @@ const Profile = () => {
       setUser(data.user);
       setFormData({
         name: data.user.name,
-        phone_number: data.user.phone_number,
-        address: {
-          street: data.user.address.street,
-          city: data.user.address.city,
-          state: data.user.address.state,
-          country: data.user.address.country
-        }
+        phone_number: data.user.phone_number
       });
       setLoading(false);
     } catch (err) {
@@ -85,6 +77,7 @@ const Profile = () => {
     }
   };
 
+  // Effect hooks
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -95,23 +88,13 @@ const Profile = () => {
     }
   }, []);
 
+  // Event handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('address.')) {
-      const addressField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        address: {
-          ...prev.address,
-          [addressField]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handlePasswordChange = (e) => {
@@ -132,7 +115,11 @@ const Profile = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: user.email,
+          name: formData.name,
+          phone_number: formData.phone_number
+        }),
       });
 
       if (!response.ok) {
@@ -166,16 +153,20 @@ const Profile = () => {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
+          email: user.email,
+          oldPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to update password');
+        setPasswordError(data.message || 'Failed to update password');
+        setShowPasswordError(true);
+        throw new Error(data.message || 'Failed to update password');
       }
 
-      const data = await response.json();
       setEditPasswordMode(false);
       setPasswordData({
         currentPassword: '',
@@ -186,277 +177,313 @@ const Profile = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
       setLoading(false);
     } catch (err) {
-      setError(err.message);
       setLoading(false);
     }
   };
 
+  // Render loading and error states
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>;
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong className="font-bold">Error: </strong>
+        <span className="block sm:inline">{error}</span>
+      </div>
+    );
   }
 
+  // Main render
   return (
-    <div className="profile-container">
+    <div className="min-h-screen py-8">
       {!isLoggedIn ? (
-        <div className="login-form">
-          <h2>Login</h2>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6">
+          <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                Email:
+              </label>
+              <input
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+                Password:
+              </label>
+              <input
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button
+              className="w-full bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              onClick={handleLogin}
+            >
+              Login
+            </button>
           </div>
-          <div className="form-group">
-            <label>Password:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button onClick={handleLogin}>Login</button>
         </div>
       ) : (
-        <div className="profile-content">
-          <div className="profile-header">
-            <h1>User Profile</h1>
-          </div>
-
-          {successMessage && (
-            <div className="success-message">
-              {successMessage}
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="p-8">
+            <div className="flex justify-between items-center border-b pb-6">
+              <h1 className="text-3xl font-bold text-gray-800">User Profile</h1>
             </div>
-          )}
 
-          {user && (
-            <div className="profile-details">
-              <div className="profile-section">
-                <div className="section-header">
-                  <h2>Personal Information</h2>
-                  {!editMode ? (
-                    <button onClick={() => setEditMode(true)} className="edit-button">
-                      Edit
+            {successMessage && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+                {successMessage}
+              </div>
+            )}
+
+            {/* Password Error Popup */}
+            {showPasswordError && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                  <h3 className="text-lg font-bold text-red-600 mb-4">Password Error</h3>
+                  <p className="text-gray-700 mb-4">{passwordError}</p>
+                  <div className="flex justify-end">
+                    <button
+                      className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md"
+                      onClick={() => setShowPasswordError(false)}
+                    >
+                      OK
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {user && (
+              <div className="space-y-8">
+                {/* Personal Information Section */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-800">Personal Information</h2>
+                    {!editMode ? (
+                      <button
+                        className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                        onClick={() => setEditMode(true)}
+                      >
+                        Edit
+                      </button>
+                    ) : (
+                      <div className="space-x-2">
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                          onClick={handleUpdateUserInfo}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                          onClick={() => setEditMode(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editMode ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight"
+                          type="text"
+                          value={user.email}
+                          disabled
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Phone Number:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          type="text"
+                          name="phone_number"
+                          value={formData.phone_number}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+                    </div>
                   ) : (
-                    <div className="edit-actions">
-                      <button onClick={handleUpdateUserInfo} className="save-button">
-                        Save
-                      </button>
-                      <button onClick={() => setEditMode(false)} className="cancel-button">
-                        Cancel
-                      </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-600 text-sm">Name</p>
+                        <p className="text-gray-900 font-medium">{user.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Email</p>
+                        <p className="text-gray-900 font-medium">{user.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Role</p>
+                        <p className="text-gray-900 font-medium">{user.role}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Phone Number</p>
+                        <p className="text-gray-900 font-medium">{user.phone_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Member Since</p>
+                        <p className="text-gray-900 font-medium">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {editMode ? (
-                  <div className="edit-form">
-                    <div className="form-group">
-                      <label>Name:</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Email:</label>
-                      <input
-                        type="text"
-                        value={user.email}
-                        disabled
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Role:</label>
-                      <input
-                        type="text"
-                        value={user.role}
-                        disabled
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Phone Number:</label>
-                      <input
-                        type="text"
-                        name="phone_number"
-                        value={formData.phone_number}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                {/* Address Section */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-800">Address</h2>
                   </div>
-                ) : (
-                  <>
-                    <div className="detail-row">
-                      <span className="detail-label">Name:</span>
-                      <span className="detail-value">{user.name}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-600 text-sm">Street</p>
+                      <p className="text-gray-900 font-medium">{user.address.street}</p>
                     </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Email:</span>
-                      <span className="detail-value">{user.email}</span>
+                    <div>
+                      <p className="text-gray-600 text-sm">City/District</p>
+                      <p className="text-gray-900 font-medium">{user.address.city}</p>
                     </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Role:</span>
-                      <span className="detail-value">{user.role}</span>
+                    <div>
+                      <p className="text-gray-600 text-sm">State/Province</p>
+                      <p className="text-gray-900 font-medium">{user.address.state}</p>
                     </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Phone Number:</span>
-                      <span className="detail-value">{user.phone_number}</span>
+                    <div>
+                      <p className="text-gray-600 text-sm">Country</p>
+                      <p className="text-gray-900 font-medium">{user.address.country}</p>
                     </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Member Since:</span>
-                      <span className="detail-value">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="profile-section">
-                <div className="section-header">
-                  <h2>Address</h2>
-                </div>
-                {editMode ? (
-                  <div className="edit-form">
-                    <div className="form-group">
-                      <label>Street:</label>
-                      <input
-                        type="text"
-                        name="address.street"
-                        value={formData.address.street}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>City/District:</label>
-                      <input
-                        type="text"
-                        name="address.city"
-                        value={formData.address.city}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>State/Province:</label>
-                      <input
-                        type="text"
-                        name="address.state"
-                        value={formData.address.state}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Country:</label>
-                      <input
-                        type="text"
-                        name="address.country"
-                        value={formData.address.country}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="detail-row">
-                      <span className="detail-label">Street:</span>
-                      <span className="detail-value">{user.address.street}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">City/District:</span>
-                      <span className="detail-value">{user.address.city}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">State/Province:</span>
-                      <span className="detail-value">{user.address.state}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Country:</span>
-                      <span className="detail-value">{user.address.country}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Coordinates:</span>
-                      <span className="detail-value">
+                    <div>
+                      <p className="text-gray-600 text-sm">Coordinates</p>
+                      <p className="text-gray-900 font-medium">
                         {user.address.latitude}, {user.address.longitude}
-                      </span>
+                      </p>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
 
-              <div className="profile-section">
-                <div className="section-header">
-                  <h2>Change Password</h2>
-                  {!editPasswordMode ? (
-                    <button onClick={() => setEditPasswordMode(true)} className="edit-button">
-                      Change Password
-                    </button>
-                  ) : (
-                    <div className="edit-actions">
-                      <button onClick={handleUpdatePassword} className="save-button">
-                        Save
+                {/* Change Password Section */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-gray-800">Change Password</h2>
+                    {!editPasswordMode ? (
+                      <button
+                        className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                        onClick={() => setEditPasswordMode(true)}
+                      >
+                        Change Password
                       </button>
-                      <button onClick={() => setEditPasswordMode(false)} className="cancel-button">
-                        Cancel
-                      </button>
+                    ) : (
+                      <div className="space-x-2">
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                          onClick={handleUpdatePassword}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                          onClick={() => {
+                            setEditPasswordMode(false);
+                            setPasswordData({
+                              currentPassword: '',
+                              newPassword: '',
+                              confirmPassword: ''
+                            });
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editPasswordMode && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Current Password:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          type="password"
+                          name="currentPassword"
+                          value={passwordData.currentPassword}
+                          onChange={handlePasswordChange}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">New Password:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          type="password"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Confirm New Password:</label>
+                        <input
+                          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                          type="password"
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          required
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {editPasswordMode && (
-                  <div className="edit-form">
-                    <div className="form-group">
-                      <label>Current Password:</label>
-                      <input
-                        type="password"
-                        name="currentPassword"
-                        value={passwordData.currentPassword}
-                        onChange={handlePasswordChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>New Password:</label>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        value={passwordData.newPassword}
-                        onChange={handlePasswordChange}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Confirm New Password:</label>
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        value={passwordData.confirmPassword}
-                        onChange={handlePasswordChange}
-                      />
-                    </div>
-                  </div>
-                )}
+                {/* Gardens Section */}
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Gardens</h2>
+                  {user.gardens && user.gardens.length > 0 ? (
+                    <ul className="divide-y divide-gray-200">
+                      {user.gardens.map((garden) => (
+                        <li key={garden._id} className="py-3">
+                          <p className="text-gray-900 font-medium">{garden.name}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-600">No gardens associated with this account.</p>
+                  )}
+                </div>
               </div>
-
-              <div className="profile-section">
-                <h2>Gardens</h2>
-                {user.gardens && user.gardens.length > 0 ? (
-                  <ul className="garden-list">
-                    {user.gardens.map((garden) => (
-                      <li key={garden._id}>{garden.name}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No gardens associated with this account.</p>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -464,206 +491,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-// CSS Styles
-const styles = `
-  .profile-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-  }
-
-  .loading, .error {
-    text-align: center;
-    padding: 20px;
-    font-size: 18px;
-  }
-
-  .error {
-    color: #d32f2f;
-  }
-
-  .success-message {
-    background-color: #4caf50;
-    color: white;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-
-  .login-form {
-    background: #f5f5f5;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 400px;
-    margin: 50px auto;
-  }
-
-  .login-form h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  .form-group {
-    margin-bottom: 15px;
-  }
-
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-
-  .form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-
-  .login-form button {
-    width: 100%;
-    padding: 10px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-
-  .login-form button:hover {
-    background-color: #45a049;
-  }
-
-  .profile-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 20px;
-    font-size: 38px;
-    font-weight: bold;
-  }
-
-  .profile-section {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-
-  .profile-section h2 {
-    margin-top: 0;
-    color: #333;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    font-weight: bold;
-  }
-
-  .detail-row {
-    display: flex;
-    margin-bottom: 10px;
-    margin-top: 10px;
-  }
-
-  .detail-label {
-    font-weight: bold;
-    width: 150px;
-    color: #555;
-  }
-
-  .detail-value {
-    flex: 1;
-  }
-
-  .edit-button, .save-button, .cancel-button {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .edit-button {
-    background-color: #2196F3;
-    color: white;
-  }
-
-  .edit-button:hover {
-    background-color: #0b7dda;
-  }
-
-  .save-button {
-    background-color: #4CAF50;
-    color: white;
-    margin-right: 8px;
-  }
-
-  .save-button:hover {
-    background-color: #45a049;
-  }
-
-  .cancel-button {
-    background-color: #f44336;
-    color: white;
-  }
-
-  .cancel-button:hover {
-    background-color: #d32f2f;
-  }
-
-  .edit-actions {
-    display: flex;
-  }
-
-  .edit-form .form-group {
-    margin-bottom: 15px;
-  }
-
-  .edit-form .form-group label {
-    display: block;
-    margin-bottom: 5px;
-  }
-
-  .edit-form .form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-
-  .garden-list {
-    list-style-type: none;
-    padding: 10px;
-    padding-top: 10px;
-  }
-
-  .garden-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    padding-top: 10px;
-  }
-
-  .garden-list li:last-child {
-    border-bottom: none;
-    padding-top: 20px;
-  }
-`;
-
-// Inject styles
-const styleElement = document.createElement('style');
-styleElement.textContent = styles;
-document.head.appendChild(styleElement);

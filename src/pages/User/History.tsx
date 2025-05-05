@@ -85,7 +85,7 @@ const History = () => {
 
           .container {
             width: 100%;
-            max-width: 800px;
+            display: grid;
             margin: 0 auto;
             padding: 20px;
             font-family: 'Inter', sans-serif;
