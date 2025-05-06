@@ -31,14 +31,14 @@ interface TimeSelection {
 const HomePage2 = () => {
   const [selectedDate, setSelectedDate] = useState<Value>(new Date());
   const [selectedType, setSelectedType] = useState<
-    "temperature" | "light" | "humidity"
+    "temperature" | "light" | "soilMoisture"
   >("temperature");
   const [allTemperatureData, setAllTemperatureData] = useState<SensorData[]>([]);
   const [allLightData, setAllLightData] = useState<SensorData[]>([]);
-  const [allHumidityData, setAllHumidityData] = useState<SensorData[]>([]);
+  const [allSoilMoistureData, setAllSoilMoistureData] = useState<SensorData[]>([]);
   const [currentTemp, setCurrentTemp] = useState<number>(0);
   const [currentLight, setCurrentLight] = useState<number>(0);
-  const [currentHumidity, setCurrentHumidity] = useState<number>(0);
+  const [currentSoilMoisture, setCurrentSoilMoisture] = useState<number>(0);
   const [startTime, setStartTime] = useState<TimeSelection>({ hour: 0, minute: 0 });
   const [endTime, setEndTime] = useState<TimeSelection>({ hour: 23, minute: 59 });
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -178,11 +178,11 @@ const HomePage2 = () => {
     });
   }, [allLightData, selectedDate, startTime, endTime]);
 
-  // Filter humidity data similarly
-  const filteredHumidityData = useMemo(() => {
-    // Similar implementation for humidity data
-    return allHumidityData;
-  }, [allHumidityData, selectedDate, startTime, endTime]);
+  // Filter soil moisture data similarly
+  const filteredSoilMoistureData = useMemo(() => {
+    // Similar implementation for soil moisture data
+    return allSoilMoistureData;
+  }, [allSoilMoistureData, selectedDate, startTime, endTime]);
 
   // Setup socket connection
   useEffect(() => {
@@ -230,8 +230,32 @@ const HomePage2 = () => {
       }
     });
     
+    // Listen for soil moisture updates
+    socket.on("soil moisture sensor", (data) => {
+      console.log("Received soil moisture data:", data);
+      
+      // Only process if it's from the correct device
+      if (data.device_name === "Soil moisture Sensor - Garden1_User2") {
+        // Format the new data for the chart
+        const newData = {
+          timestamp: data.timestamp,
+          value: data.value,
+          day: format(new Date(data.timestamp), "dd/MM HH:mm:ss"),
+        };
+        
+        // Add to all data
+        setAllSoilMoistureData(prevData => [...prevData, newData]);
+        
+        // Update current soil moisture value regardless of time filter
+        setCurrentSoilMoisture(data.value);
+      }
+    });
+    
     return () => {
       socket.disconnect();
+      socket.off("temperature sensor");
+      socket.off("light sensor");
+      socket.off("soil moisture sensor");
     };
   }, []);
 
@@ -241,8 +265,8 @@ const HomePage2 = () => {
         return filteredTemperatureData;
       case "light":
         return filteredLightData;
-      case "humidity":
-        return filteredHumidityData;
+      case "soilMoisture":
+        return filteredSoilMoistureData;
       default:
         return filteredTemperatureData;
     }
@@ -254,8 +278,8 @@ const HomePage2 = () => {
         return "Temperature";
       case "light":
         return "Light Intensity";
-      case "humidity":
-        return "Humidity";
+      case "soilMoisture":
+        return "Soil Moisture";
       default:
         return "Temperature";
     }
@@ -267,7 +291,7 @@ const HomePage2 = () => {
         return "value";
       case "light":
         return "value";
-      case "humidity":
+      case "soilMoisture":
         return "value";
       default:
         return "value";
@@ -280,7 +304,7 @@ const HomePage2 = () => {
         return "°C";
       case "light":
         return "lux";
-      case "humidity":
+      case "soilMoisture":
         return "%";
       default:
         return "°C";
@@ -293,8 +317,8 @@ const HomePage2 = () => {
         return currentTemp;
       case "light":
         return currentLight;
-      case "humidity":
-        return currentHumidity;
+      case "soilMoisture":
+        return currentSoilMoisture;
       default:
         return 0;
     }
@@ -321,9 +345,12 @@ const HomePage2 = () => {
       <div className="grid-container">
         <div className="info-cards">
           <div
-            className={`info-card gray ${
+            className={`info-card ${
               selectedType === "temperature" ? "selected" : ""
             }`}
+            style={{
+              background:"linear-gradient(270deg, #FFFFFF 0%, rgba(240, 170, 109, 0.5) 50%, #FFFFFF 100%)"
+            }}
             onClick={() => setSelectedType("temperature")}
           >
             <FaTemperatureHigh className="icon" />
@@ -352,14 +379,14 @@ const HomePage2 = () => {
 
           <div
             className={`info-card green ${
-              selectedType === "humidity" ? "selected" : ""
+              selectedType === "soilMoisture" ? "selected" : ""
             }`}
-            onClick={() => setSelectedType("humidity")}
+            onClick={() => setSelectedType("soilMoisture")}
           >
             <FaTint className="icon" />
             <div>
               <p className="info-text">
-                Humidity <strong>{currentHumidity}%</strong>
+                Soil Moisture <strong>{currentSoilMoisture}%</strong>
               </p>
               <p className="info-subtext">Today</p>
             </div>

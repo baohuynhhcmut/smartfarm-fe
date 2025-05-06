@@ -140,10 +140,10 @@ const Home = () => {
                     device_name: device.device_name
                   }
                 }));
-              } else if (device.type.includes('humidity')) {
+              } else if (device.type.includes('soilMoisture')) {
                 setSensorReadings(prev => ({
                   ...prev,
-                  humidity: {
+                  soilMoisture: {
                     value: data.value,
                     timestamp: data.timestamp,
                     device_name: device.device_name
@@ -185,7 +185,7 @@ const Home = () => {
           }
           
           // Listen for humidity legacy events
-          if (device.type.includes('humidity')) {
+          if (device.type.includes('soilMoisture')) {
             socket.on('humidity', (data) => {
               console.log('Received legacy humidity data:', data);
               setConnectedFeeds(prev => 
@@ -197,7 +197,7 @@ const Home = () => {
               
               setSensorReadings(prev => ({
                 ...prev,
-                humidity: {
+                soilMoisture: {
                   value: data.value,
                   timestamp: data.timestamp,
                   device_name: device.device_name
@@ -330,6 +330,8 @@ const Home = () => {
   const dayOfWeek = format(currentTime, 'EEEE', { locale: vi });
   const timeString = format(currentTime, 'HH:mm');
 
+  console.log("aaa: ",sensorReadings.soilMoisture )
+
   return (
     <>
       <div className="flex items-center! justify-between">
@@ -433,8 +435,8 @@ const Home = () => {
             </div>
             
             <div className="info-5 flex items-center justify-center gap-x-2  p-3">
-              {selectedGarden && !sensorReadings.humidity && loadingDeviceIds.some(id => 
-                devices.find(d => d.device_id === id && d.type.includes('humidity'))
+              {selectedGarden && !sensorReadings.soilMoisture && loadingDeviceIds.some(id => 
+                devices.find(d => d.device_id === id && d.type.includes('soilMoisture'))
               ) ? (
                 <div className="flex items-center justify-center bg-white bg-opacity-75 rounded-xl z-10">
                   <div className="loader"></div>
@@ -445,13 +447,13 @@ const Home = () => {
               <div className="flex flex-col">
                 <p className="text-lg font-bold">Độ ẩm</p>
                 <p className="text-lg font-bold">
-                  {sensorReadings.humidity 
-                    ? `${sensorReadings.humidity.value}%` 
+                  {sensorReadings.soilMoisture 
+                    ? `${sensorReadings.soilMoisture.value}%` 
                     : selectedGarden && hasDevices ? 'Đang chờ...' : 'N/A'
                   }
                 </p>
-                {sensorReadings.humidity?.device_name && (
-                  <p className="text-xs text-gray-500">{sensorReadings.humidity.device_name}</p>
+                {sensorReadings.soilMoisture?.device_name && (
+                  <p className="text-xs text-gray-500">{sensorReadings.soilMoisture.device_name}</p>
                 )}
               </div>
             </div>

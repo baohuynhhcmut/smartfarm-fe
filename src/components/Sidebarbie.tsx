@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaHome, FaDev, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaDev, FaUser, FaSignOutAlt, FaBell } from "react-icons/fa";
 import "./Sidebar.css"; // Sử dụng chung file CSS với sidebar thông thường
 
 const Sidebarbie = () => {
@@ -40,6 +40,13 @@ const Sidebarbie = () => {
       >
         <FaUser />
         <span>Users</span>
+      </Link>
+      <Link
+        to="/admin/notifications"
+        className={`sidebar-item ${isActive("/notifications") ? "active" : ""}`}
+      >
+        <FaBell />
+        <span>Notifications</span>
       </Link>
       </div>
       <div className="sidebar-item logout-button" onClick={handleLogout}>

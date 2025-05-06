@@ -1,356 +1,389 @@
-import { useState } from "react";
-import DateFilter from "../../components/DateFilter"; // Import component DateFilter
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { format } from "date-fns";
 
+// Import Shadcn UI components
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "../../components/ui/select";
+import { 
+  Card,
+  CardContent, 
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../components/ui/pagination";
+
+// Define the interface for a session
+interface Session {
+  _id: string;
+  device_id: string;
+  action: string;
+  by: string;
+  timestamp: string;
+}
+
+const BASE_URL = 'http://localhost:8081/api/v1';
+const ITEMS_PER_PAGE = 10;
 
 const History = () => {
-  const data = [
-    {
-      id: "0001",
-      device: "Led 1",
-      brand: "Phillips",
-      time: "2025-03-01 12:15",
-      action: "Turn on",
-      by: "You",
-      byClass: "by-you",
-    },
-    {
-      id: "0005",
-      device: "Led 2",
-      brand: "Xiaomi",
-      time: "2025-03-01 12:18",
-      action: "Turn on",
-      by: "Admin",
-      byClass: "by-admin",
-    },
-    {
-      id: "0006",
-      device: "Irrigation system",
-      brand: "Xiaomi",
-      time: "2025-02-24 14:42",
-      action: "Turn off",
-      by: "Automatic",
-      byClass: "by-automatic",
-    },
-    {
-      id: "0007",
-      device: "Spinker system",
-      brand: "Rain Bird",
-      time: "2025-02-24 14:55",
-      action: "Turn off",
-      by: "You",
-      byClass: "by-you",
-    },
-    {
-      id: "0005",
-      device: "Led 2",
-      brand: "Xiaomi",
-      time: "2025-02-23 11:58",
-      action: "Turn off",
-      by: "Automatic",
-      byClass: "by-automatic",
-    },
-  ];
+  // State for sessions data
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // State để lưu giá trị lọc
-  const [filterId, setFilterId] = useState("");
-  const [filterDevice, setFilterDevice] = useState("");
-  const [filterBy, setFilterBy] = useState("");
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filter states
+  const [filterId, setFilterId] = useState("all");
+  const [filterAction, setFilterAction] = useState("all");
+  const [filterBy, setFilterBy] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Hàm lọc dữ liệu
-  const filteredData = data.filter((item) => {
-    const itemDate = new Date(item.time).getTime(); // Chuyển đổi thời gian của item thành timestamp
+  // Fetch sessions from API
+  useEffect(() => {
+    const fetchSessions = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
+
+        const response = await axios.get(`${BASE_URL}/session/getAllSessions`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log("Sessions data:", response.data);
+        setSessions(response.data);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching sessions:", err);
+        setError(err.message || "Failed to load session data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, []);
+
+  // Get unique device IDs for filtering
+  const uniqueDeviceIds = [...new Set(sessions.map(session => session.device_id))];
+  
+  // Filtered sessions based on filter criteria
+  const filteredSessions = sessions.filter((session) => {
+    const sessionDate = new Date(session.timestamp).getTime();
     const startTimestamp = startDate ? new Date(startDate).getTime() : null;
-    const endTimestamp = endDate
-      ? new Date(endDate).getTime() + 86400000
-      : null; // Thêm 1 ngày (86400000 ms) để bao gồm cả ngày kết thúc
+    const endTimestamp = endDate ? new Date(endDate).getTime() + 86400000 : null; // Adding 1 day to include end date
 
     return (
-      (filterId === "" || item.id === filterId) &&
-      (filterDevice === "" ||
-        item.device.toLowerCase().includes(filterDevice.toLowerCase())) &&
-      (filterBy === "" || item.by === filterBy) &&
-      (!startTimestamp || itemDate >= startTimestamp) &&
-      (!endTimestamp || itemDate <= endTimestamp)
+      (filterId === "all" || session.device_id === filterId) &&
+      (filterAction === "all" || session.action === filterAction) &&
+      (filterBy === "all" || session.by === filterBy) &&
+      (!startTimestamp || sessionDate >= startTimestamp) &&
+      (!endTimestamp || sessionDate <= endTimestamp)
     );
   });
+  
+  // Calculate pagination values
+  const totalItems = filteredSessions.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  
+  // Paginated data - get current page items
+  const paginatedSessions = filteredSessions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when changing pages
+    window.scrollTo(0, 0);
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, "yyyy-MM-dd HH:mm:ss");
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilterId("all");
+    setFilterAction("all");
+    setFilterBy("all");
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+  
+  // Generate array of page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPageButtons = 5;
+    
+    if (totalPages <= maxPageButtons) {
+      // Show all pages if there are fewer than maxPageButtons
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+      
+      // Calculate range around current page
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      
+      // Adjust range to show maxPageButtons - 2 pages (excluding first and last)
+      while (end - start + 1 < maxPageButtons - 2) {
+        if (start > 2) start--;
+        else if (end < totalPages - 1) end++;
+        else break;
+      }
+      
+      // Add ellipsis for gaps
+      if (start > 2) pages.push(-1); // -1 represents ellipsis
+      
+      // Add pages in range
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      // Add ellipsis for gaps
+      if (end < totalPages - 1) pages.push(-2); // -2 represents ellipsis
+      
+      // Always show last page
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
 
   return (
-    <div className="container">
-      {/* CSS được viết trực tiếp trong thẻ <style> */}
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    <div className="container mx-auto py-6 px-4">
+      <h1 className="text-2xl font-bold mb-6">DEVICE ACTIVITY HISTORY</h1>
+      
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter session history by various criteria</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            {/* Device ID Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="device-id">Device ID</Label>
+              <Select 
+                value={filterId} 
+                onValueChange={setFilterId}
+              >
+                <SelectTrigger id="device-id">
+                  <SelectValue placeholder="Select Device" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Devices</SelectItem>
+                  {uniqueDeviceIds.map((deviceId) => (
+                    <SelectItem key={deviceId} value={deviceId}>
+                      {deviceId}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          .container {
-            width: 100%;
-            display: grid;
-            margin: 0 auto;
-            padding: 20px;
-            font-family: 'Inter', sans-serif;
-          }
+            {/* Action Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="action">Action</Label>
+              <Select 
+                value={filterAction} 
+                onValueChange={setFilterAction}
+              >
+                <SelectTrigger id="action">
+                  <SelectValue placeholder="Select Action" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Actions</SelectItem>
+                  <SelectItem value="Turn on">Turn On</SelectItem>
+                  <SelectItem value="Turn off">Turn Off</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          .filters-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-          }
+            {/* By Filter */}
+            <div className="space-y-2">
+              <Label htmlFor="by">Initiated By</Label>
+              <Select 
+                value={filterBy} 
+                onValueChange={setFilterBy}
+              >
+                <SelectTrigger id="by">
+                  <SelectValue placeholder="Select Initiator" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="automatic">Automatic</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          .garden-dropdown {
-            position: relative;
-            width: 100%;
-            margin-bottom: 10px;
-          }
+            {/* Date Range Filters */}
+            <div className="space-y-2">
+              <Label htmlFor="start-date">Start Date</Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
 
-          .filters-row {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-          }
+            <div className="space-y-2">
+              <Label htmlFor="end-date">End Date</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
 
-          .filter-item {
-            flex: 1;
-            min-width: 0;
-          }
-
-          .dropdown-select {
-            width: 100%;
-            padding: 10px 14px;
-            font-size: 16px;
-            filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
-            border-radius: 9px;
-            background-color: white;
-            appearance: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-          }
-
-          .dropdown-select:hover {
-            border-color: #999;
-          }
-
-          .dropdown-icon {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            pointer-events: none;
-            color: #666;
-          }
-
-          .date-filter-container {
-            display: flex;
-            filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
-            gap: 10px;
-            flex: 2;
-            max-width: 300px;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .date-filter {
-            flex: 1;
-            min-width: 0;
-          }
-
-          .date-filter input {
-            width: 100%;
-            padding: 10px 14px;
-            font-size: 16px;
-            border-radius: 9px;
-            background-color: white;
-            font-family: 'Inter', sans-serif;
-          }
-          .date-filter-container input {
-            width: 100%;
-            padding: 10px 14px;
-            font-size: 16px;
-            border-radius: 9px;
-            background-color: white;
-            font-family: 'Inter', sans-serif;
-          }
-
-          .title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            font-family: 'Inter', sans-serif;
-          }
-
-          .table-container {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-          }
-
-          .table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .table-header {
-            background-color: #f5f5f5;
-          }
-
-          .table-header th {
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: bold;
-            color: #333;
-          }
-
-          .table-row {
-            border-top: 1px solid #eee;
-          }
-
-          .table-row td {
-            padding: 12px 16px;
-          }
-
-          .device-brand {
-            font-size: 14px;
-            color: #666;
-          }
-
-          .by-label {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 14px;
-          }
-
-          .by-you {
-            color: #ec4899;
-            background-color: #fce7f3;
-          }
-
-          .by-admin {
-            color: #3b82f6;
-            background-color: #dbeafe;
-          }
-
-          .by-automatic {
-            color: #f97316;
-            background-color: #ffedd5;
-          }
-
-          @media (max-width: 768px) {
-            .filters-row {
-              flex-direction: column;
-            }
-          }
-        `}
-      </style>
-
-      {/* Phần JSX */}
-      <div className="filters-container">
-        <div className="garden-dropdown">
-          <select className="dropdown-select">
-            <option>Choose the garden</option>
-            <option>Trường Đại học Bách Khoa, ĐHQGHCM</option>
-            <option>Trường Đại học Quốc tế, ĐHQGHCM</option>
-            <option>Bcons Suối Tiên</option>
-            <option>Bcons Miền Đông</option>
-          </select>
-          <div className="dropdown-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-            </svg>
+            {/* Reset Button */}
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={resetFilters}
+                className="w-full"
+              >
+                Reset Filters
+              </Button>
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Bộ lọc - now in one row */}
-        <div className="filters-row">
-          <div className="filter-item">
-            <select
-              className="dropdown-select"
-              value={filterId}
-              onChange={(e) => setFilterId(e.target.value)}
-            >
-              <option value="">Filter by ID</option>
-              {[...new Set(data.map((item) => item.id))].map((id) => (
-                <option key={id} value={id}>
-                  {id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <select
-              className="dropdown-select"
-              value={filterDevice}
-              onChange={(e) => setFilterDevice(e.target.value)}
-            >
-              <option value="">Choose the device</option>
-              <option value="Led">Led</option>
-              <option value="Irrigation">Irrigation</option>
-              <option value="Spinker">Spinker</option>
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <select
-              className="dropdown-select"
-              value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value)}
-            >
-              <option value="">Filter by</option>
-              <option value="You">You</option>
-              <option value="Admin">Admin</option>
-              <option value="Automatic">Automatic</option>
-            </select>
-          </div>
-
-          <div className="date-filter-container">
-          <DateFilter
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-            // Bỏ dòng className="date-filter" ở đây
-          />
-        </div>
-        </div>
-
-        {/* Date filter container - now part of the same row */}
-        
-        
-      </div>
-
-      <h1 className="title">DEVICE ACTIVITY HISTORY</h1>
-      <div className="table-container">
-        <table className="table">
-          <thead className="table-header">
-            <tr>
-              <th>ID</th>
-              <th>Device</th>
-              <th>Time</th>
-              <th>Action</th>
-              <th>By</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((item, index) => (
-              <tr key={index} className="table-row">
-                <td>{item.id}</td>
-                <td>
-                  <div>{item.device}</div>
-                  <div className="device-brand">{item.brand}</div>
-                </td>
-                <td>{item.time}</td>
-                <td>{item.action}</td>
-                <td>
-                  <span className={`by-label ${item.byClass}`}>{item.by}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Session History</CardTitle>
+          <CardDescription>
+            {loading ? 'Loading...' : 
+             `Showing ${Math.min(paginatedSessions.length, ITEMS_PER_PAGE)} of ${filteredSessions.length} entries (Page ${currentPage} of ${totalPages || 1})`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Loading session data...</div>
+          ) : error ? (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          ) : filteredSessions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No session data found matching your filters.
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="p-3 text-left font-medium text-muted-foreground">ID</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Device ID</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Action</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">Timestamp</th>
+                      <th className="p-3 text-left font-medium text-muted-foreground">By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedSessions.map((session) => (
+                      <tr key={session._id} className="border-b border-border hover:bg-muted/50">
+                        <td className="p-3 text-sm">{session._id.substring(0, 8)}...</td>
+                        <td className="p-3 text-sm">{session.device_id}</td>
+                        <td className="p-3 text-sm">{session.action}</td>
+                        <td className="p-3 text-sm">{formatDate(session.timestamp)}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            session.by === 'user' 
+                              ? 'bg-pink-100 text-pink-800' 
+                              : session.by === 'admin' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-orange-100 text-orange-800'
+                          }`}>
+                            {session.by}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                          className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {getPageNumbers().map((page, index) => (
+                        <PaginationItem key={index}>
+                          {page === -1 || page === -2 ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              isActive={page === currentPage}
+                              onClick={() => handlePageChange(page)}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                          className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

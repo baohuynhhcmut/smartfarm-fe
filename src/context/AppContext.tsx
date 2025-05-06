@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import socket from '../services/socket';
 
+// Add global type definition for socketInstance
+declare global {
+  interface Window {
+    socketInstance: typeof socket;
+  }
+}
+
 // Định nghĩa kiểu dữ liệu cho state
 interface SensorData {
   value: number;
@@ -273,6 +280,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Kết nối socket ngay khi component được mount
     socket.connect();
     
+    // Make socket available globally
+    window.socketInstance = socket;
+    
     // Setup connect/disconnect listeners
     socket.on('connect', () => {
       console.log('Socket connected successfully');
@@ -297,6 +307,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     socket.on('soil moisture sensor', (data) => {
       console.log('Socket - Soil moisture data received:', data);
+      dispatch({ type: 'SET_SOIL_MOISTURE_DATA', payload: data });
+    });
+
+    // Add specific handler for soil moisture with V3 feed
+    socket.on('soil', (data) => {
+      console.log('Socket - Legacy soil moisture data received:', data);
       dispatch({ type: 'SET_SOIL_MOISTURE_DATA', payload: data });
     });
 
@@ -359,6 +375,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       socket.off('temp');
       socket.off('humidity');
       socket.off('light');
+      socket.off('soil');
       socket.off('pump');
       socket.off('led');
       socket.off('control_ack');
